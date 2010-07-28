@@ -17,6 +17,12 @@
 #include <Python.h>
 #include <structmember.h>
 
+/* Node objects are not exposed to the Python interpreter. Instead, they act as
+ * internal data structures referenced by the main BinaryTree object.
+ * 'item' holds the actual data, a reference to a PyObject.
+ * 'lchild' and 'rchild' refer to the left and right child nodes of a given
+ * node.
+ */ 
 typedef struct _Node {
 	PyObject_HEAD
 	
@@ -24,16 +30,22 @@ typedef struct _Node {
 	struct _Node * lchild, * rchild;
 } Node;
 
+/* The main binary tree class, exposed to the interpreter as BinaryTree.
+ * 'root' holds a reference to the root (a Node) of the tree.
+ * ob_size (defined in PyObject_VAR_HEAD) holds the number of nodes in the tree
+ */
 typedef struct {
 	PyObject_VAR_HEAD
 
 	Node * root;
 } BinaryTree;
 
+/* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 static void Node_clear(Node * self);
 
+/* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 static void BinaryTree_clear(BinaryTree * self);
