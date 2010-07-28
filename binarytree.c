@@ -24,11 +24,25 @@ typedef struct _Node {
 	struct _Node * lchild, * rchild;
 } Node;
 
+typedef struct {
+	PyObject_VAR_HEAD
+
+	Node * root;
+} BinaryTree;
+
 static void Node_dealloc(Node * self);
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 static void Node_clear(Node * self);
 
+static void BinaryTree_dealloc(BinaryTree * self);
+static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
+static void BinaryTree_clear(BinaryTree * self);
+
 static PyTypeObject NodeType = {
+	PyObject_HEAD_INIT(NULL)
+};
+
+static PyTypeObject BinaryTreeType = {
 	PyObject_HEAD_INIT(NULL)
 };
 
@@ -55,6 +69,25 @@ static void Node_clear(Node * self) {
 	return;
 }
 
+static void BinaryTree_dealloc(BinaryTree * self) {
+	BinaryTree_clear(self);
+	Py_TYPE((PyObject *) self)->tp_free((PyObject *) self);
+
+	return;
+}
+
+static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg) {
+	Py_VISIT(self->root);
+
+	return 0;
+}
+
+static void BinaryTree_clear(BinaryTree * self) {
+	Py_CLEAR(self->root);
+
+	return;
+}
+
 #ifndef PyMODINIT_FUNC
 #define PyMODINIT_FUNC void
 #endif
@@ -70,16 +103,29 @@ initbinarytree(void) {
 	NodeType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC;
 	NodeType.tp_traverse = (traverseproc) Node_traverse;
 	NodeType.tp_clear = (inquiry) Node_clear;
-
+	NodeType.tp_dealloc = (destructor) Node_dealloc;
+	
 	if ( PyType_Ready(&NodeType) < 0 ) return;
+
+	/* BinaryTreeType setup */
+	BinaryTreeType.tp_new = PyType_GenericNew;
+	BinaryTreeType.tp_basicsize = sizeof(BinaryTree);
+	BinaryTreeType.tp_name = "binarytree.BinaryTree";
+	BinaryTreeType.tp_doc = "The main binary tree class.";
+	BinaryTreeType.tp_flags = Py_TPFLAGS_DEFAULT |
+				Py_TPFLAGS_BASETYPE |
+				Py_TPFLAGS_HAVE_GC;
+	BinaryTreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
+	BinaryTreeType.tp_clear = (inquiry) BinaryTree_clear;
+	BinaryTreeType.tp_dealloc = (destructor) BinaryTree_dealloc;
+
+	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
 	module = Py_InitModule3("binarytree", NULL,
 				"A simple binary search tree.");
 	
-/*
-	Py_INCREF(&NodeType);
-	PyModule_AddObject(module, "Node", (PyObject *) &NodeType);
-*/
+	Py_INCREF(&BinaryTreeType);
+	PyModule_AddObject(module, "BinaryTree", (PyObject *) &BinaryTreeType);
 
 	return;
 }
