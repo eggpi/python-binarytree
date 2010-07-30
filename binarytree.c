@@ -22,12 +22,15 @@
  * 'item' holds the actual data, a reference to a PyObject.
  * 'lchild' and 'rchild' refer to the left and right child nodes of a given
  * node.
+ * 'balance' is the height balance of the node. -1 for left-unbalanced, 0 for
+ * balanced and +1 for right-unbalanced.
  */ 
 typedef struct _Node {
 	PyObject_HEAD
 	
 	PyObject * item;
 	struct _Node * lchild, * rchild;
+	int balance;
 } Node;
 
 /* The main binary tree class, exposed to the interpreter as BinaryTree.
@@ -49,6 +52,10 @@ static void Node_clear(Node * self);
 static void BinaryTree_dealloc(BinaryTree * self);
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 static void BinaryTree_clear(BinaryTree * self);
+
+/* Left and right rotation */
+static Node * rotateLeft(Node * root);
+static Node * rotateRight(Node * root);
 
 static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
@@ -98,6 +105,43 @@ static void BinaryTree_clear(BinaryTree * self) {
 	Py_CLEAR(self->root);
 
 	return;
+}
+
+/* Rotates the subtree starting at 'root' to the left.
+ * Returns the new root */
+static Node * rotateLeft(Node * root) {
+	Node * newroot;
+
+	if ( root == NULL ) return NULL;
+	newroot = root->rchild;
+
+	if ( newroot ) {
+		root->rchild = newroot->lchild;
+		newroot->lchild = root;
+
+		return newroot;
+	}
+
+	return root;
+}
+
+
+/* Rotates the subtree starting at 'root' to the right.
+ * Returns the new root. */
+static Node * rotateRight(Node * root) {
+	Node * newroot;
+
+	if ( root == NULL ) return NULL;
+	newroot = root->lchild;
+
+	if ( newroot ) {
+		root->lchild = newroot->rchild;
+		newroot->rchild = root;
+
+		return newroot;
+	}
+
+	return root;
 }
 
 #ifndef PyMODINIT_FUNC
