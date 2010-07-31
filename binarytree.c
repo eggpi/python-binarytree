@@ -24,6 +24,7 @@
  * node.
  * 'balance' is the height balance of the node. -1 for left-unbalanced, 0 for
  * balanced and +1 for right-unbalanced.
+ * 'height' keeps the size of the longest path from this node to a leaf.
  */ 
 typedef struct _Node {
 	PyObject_HEAD
@@ -31,6 +32,7 @@ typedef struct _Node {
 	PyObject * item;
 	struct _Node * lchild, * rchild;
 	int balance;
+	int height;
 } Node;
 
 /* The main binary tree class, exposed to the interpreter as BinaryTree.
@@ -42,6 +44,12 @@ typedef struct {
 
 	Node * root;
 } BinaryTree;
+
+#define NODE_UPDATE_BALANCE(node) \
+	(node)->balance = ((node)->rchild ? (node)->rchild->height : 0) \
+			- ((node)->lchild ? (node)->lchild->height : 0)
+
+#define NODE_IS_LEAF(node) !((node)->rchild || (node)->rchild)
 
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
@@ -64,6 +72,8 @@ static void BinaryTree_clear(BinaryTree * self);
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
 static Node * rotateRight(Node * root);
+
+static void Node_updateHeight(Node * node);
 
 static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
@@ -132,10 +142,16 @@ static Node * rotateLeft(Node * root) {
 
 	if ( root == NULL ) return NULL;
 	newroot = root->rchild;
-
+	
 	if ( newroot ) {
 		root->rchild = newroot->lchild;
 		newroot->lchild = root;
+
+		Node_updateHeight(root);
+		NODE_UPDATE_BALANCE(root);
+		
+		Node_updateHeight(newroot);
+		NODE_UPDATE_BALANCE(newroot);
 
 		return newroot;
 	}
@@ -156,10 +172,29 @@ static Node * rotateRight(Node * root) {
 		root->lchild = newroot->rchild;
 		newroot->rchild = root;
 
+		Node_updateHeight(root);
+		NODE_UPDATE_BALANCE(root);
+		
+		Node_updateHeight(newroot);
+		NODE_UPDATE_BALANCE(newroot);
+
 		return newroot;
 	}
 
 	return root;
+}
+
+static void Node_updateHeight(Node * node) {
+	int lheight, rheight;
+
+	if ( node == NULL ) return;
+
+	lheight = node->lchild ? node->lchild->height : 0;
+	rheight = node->rchild ? node->rchild->height : 0;
+
+	node->height = 1 + ((lheight > rheight) ? lheight : rheight);
+
+	return;
 }
 
 static Node * Node_insert(Node * root, Node * new) {
@@ -251,9 +286,11 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	newnode = PyObject_New(Node, &NodeType);	
 	if ( newnode == NULL ) return NULL;
 
+	/* Initializing as a leaf */
 	newnode->lchild = NULL;
 	newnode->rchild = NULL;
 	newnode->balance = 0;
+	newnode->height = 1;
 
 	Py_INCREF(new);
 	newnode->item = new;
@@ -268,6 +305,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 		}
 		
 		self->root = newroot;
+		Node_updateHeight(self->root);
 	} else {
 		/* First insertion */
 		self->root = newnode;
