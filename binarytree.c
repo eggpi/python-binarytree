@@ -207,21 +207,23 @@ static Node * Node_insert(Node * root, Node * new) {
 	switch ( left_right ) {
 		case 0:
 			return root; /* Node already in the tree */
-		case -1:
+		case 1:
 			if ( root->lchild == NULL ) {
 				/* Base case: simple insertion */
 				Py_INCREF(new);
 				root->lchild = new;
 				root->balance--;
 
-				assert(root->balance <= 1);
-				assert(root->balance >= -1);
+				/* Unbalancing increases height */
+				if ( root->balance ) root->height++;
+				
 				return root;
 			}
 
 			/* Descend left */
 			child_balance = root->lchild->balance;
 			newchild = Node_insert(root->lchild, new);
+			if ( newchild == NULL ) return NULL;
 
 			if ( newchild != root->lchild ) {
 				/* Tree has already been rotated */
@@ -229,8 +231,25 @@ static Node * Node_insert(Node * root, Node * new) {
 				return root;
 			}
 
+			/* Insertion simply balanced the child subtree,
+			 * there's no need for rebalancing */
+			if ( root->lchild->balance == 0 ) return root;
+
+			/* Neither the child nor its balance has been
+			 * altered: nothing to do here.
+			 * Also handles the case in which the node was
+			 * already in the tree.
+			 */
+			if ( child_balance == root->lchild->balance )
+				return root;
+			
+			/* Fixing balance of the root */
 			root->balance--;
-			assert(root->balance <= 1);
+			
+			/* Left child is now at least as tall as right tree */
+			root->height = root->lchild->height + 1;
+
+			/* No need for rebalancing */
 			if ( root->balance > -2 ) return root;
 
 			if ( child_balance < root->lchild->balance ) {
@@ -241,27 +260,40 @@ static Node * Node_insert(Node * root, Node * new) {
 			/* Left-left case */
 			return rotateRight(root);
 
-		case 1:
+		case -1:
 			if ( root->rchild == NULL ) {
 				Py_INCREF(new);
 				root->rchild = new;
 				root->balance++;
 				
-				assert(root->balance <= 1);
-				assert(root->balance >= -1);
+				/* Unbalancing increases height */
+				if ( root->balance ) root->height++;
+
+				return root;
 			}
 
-			/* Descend right */
+			/* Descend right.
+			 * Symmetrical to the left case above.
+			 */
 			child_balance = root->rchild->balance;
 			newchild = Node_insert(root->rchild, new);
+			if ( newchild == NULL ) return NULL;
 
 			if ( newchild != root->rchild ) {
 				root->rchild = newchild;
 				return root;
 			}
+			
+			if ( root->rchild->balance == 0 ) return root;
+
+			if ( child_balance == root->rchild->balance )
+				return root;
 
 			root->balance++;
-			assert(root->balance >= -1 );
+			
+			/* Right child must be taller now */
+			root->height = root->rchild->height + 1;
+
 			if ( root->balance < 2 ) return root;
 
 			if ( child_balance > root->rchild->balance ) {
