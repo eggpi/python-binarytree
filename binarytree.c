@@ -75,6 +75,7 @@ static Node * rotateLeft(Node * root);
 static Node * rotateRight(Node * root);
 
 static void Node_updateHeight(Node * node);
+static Node * Node_newNode(void);
 
 static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
@@ -201,6 +202,26 @@ static void Node_updateHeight(Node * node) {
 	return;
 }
 
+/* Creates and returns a new leaf node.
+ * Returns a new reference.
+ */
+static Node * Node_newNode(void) {
+	Node * newnode;
+	
+	newnode = PyObject_New(Node, &NodeType);	
+	if ( newnode == NULL ) return NULL;
+
+	/* Initializing as a leaf */
+	newnode->lchild = NULL;
+	newnode->rchild = NULL;
+	newnode->balance = 0;
+	newnode->height = 1;
+	
+	return newnode;
+}
+
+/* Inserts 'new' into the tree whose root is 'root'.
+ * Returns the new root of the tree, or NULL in case of error. */
 static Node * Node_insert(Node * root, Node * new) {
 	int child_height;
 
@@ -300,14 +321,8 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	Node * newnode;
 
 	/* Create a new container */
-	newnode = PyObject_New(Node, &NodeType);	
+	newnode = Node_newNode();
 	if ( newnode == NULL ) return NULL;
-
-	/* Initializing as a leaf */
-	newnode->lchild = NULL;
-	newnode->rchild = NULL;
-	newnode->balance = 0;
-	newnode->height = 1;
 
 	Py_INCREF(new);
 	newnode->item = new;
@@ -331,6 +346,10 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	Py_RETURN_NONE;
 }
 
+/* Finds 'target' in the binary tree.
+ * Returns True/False if 'target' is or not in the tree, or NULL in
+ * case of error.
+ */
 static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 	Node * current = self->root;
 
