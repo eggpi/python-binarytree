@@ -65,6 +65,8 @@ static void BinaryTree_dealloc(BinaryTree * self);
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 */
 static void BinaryTree_clear(BinaryTree * self);
+static Py_ssize_t BinaryTree_length(BinaryTree * self);
+static int BinaryTree_contains(BinaryTree * self, PyObject * value);
 
 /* Protoypes for BinaryTree methods */
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
@@ -94,6 +96,8 @@ static PyMethodDef BinaryTree_methods[] = {
 	},
 	{NULL}, /* Sentinel */
 };
+
+static PySequenceMethods BinaryTree_sequence;
 
 static void Node_dealloc(Node * self) {
 	Node_clear(self);
@@ -138,6 +142,19 @@ static void BinaryTree_clear(BinaryTree * self) {
 	Py_CLEAR(self->root);
 
 	return;
+}
+
+static Py_ssize_t BinaryTree_length(BinaryTree * self) {
+	return Py_SIZE((PyObject *) self);
+}
+
+static int BinaryTree_contains(BinaryTree * self, PyObject * value) {
+	PyObject * res;
+	
+	res = BinaryTree_locate(self, value);
+	if ( res == NULL ) return -1;
+
+	return ( res == Py_True ) ? 1 : 0;
 }
 
 /* Rotates the subtree starting at 'root' to the left.
@@ -342,6 +359,8 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 		self->root = newnode;
 	}
 
+	/* XXX - Shouldn't increase when trying to insert
+	 * a node that is already in the tree */
 	self->ob_size++;
 	Py_RETURN_NONE;
 }
@@ -392,6 +411,9 @@ initbinarytree(void) {
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
 	/* BinaryTreeType setup */
+	BinaryTree_sequence.sq_length = (lenfunc) BinaryTree_length;
+	BinaryTree_sequence.sq_contains = (objobjproc) BinaryTree_contains;
+
 	BinaryTreeType.tp_new = PyType_GenericNew;
 	BinaryTreeType.tp_basicsize = sizeof(BinaryTree);
 	BinaryTreeType.tp_name = "binarytree.BinaryTree";
@@ -400,6 +422,7 @@ initbinarytree(void) {
 				Py_TPFLAGS_BASETYPE;
 	BinaryTreeType.tp_dealloc = (destructor) BinaryTree_dealloc;
 	BinaryTreeType.tp_methods = BinaryTree_methods;
+	BinaryTreeType.tp_as_sequence = &BinaryTree_sequence;
 
 	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
