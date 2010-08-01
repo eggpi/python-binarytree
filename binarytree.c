@@ -54,16 +54,12 @@ typedef struct {
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
 static Node * Node_insert(Node * root, Node * new, int * node_no);
-/* XXX - Needed for garbage collection, which I haven't managed to get to work
 static int Node_traverse(Node * self, visitproc visit, void * arg);
-*/
 static void Node_clear(Node * self);
 
 /* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
-/* XXX - Needed for garbage collection, which I haven't managed to get working
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
-*/
 static void BinaryTree_clear(BinaryTree * self);
 static Py_ssize_t BinaryTree_length(BinaryTree * self);
 static int BinaryTree_contains(BinaryTree * self, PyObject * value);
@@ -77,7 +73,7 @@ static Node * rotateLeft(Node * root);
 static Node * rotateRight(Node * root);
 
 static void Node_updateHeight(Node * node);
-static Node * Node_newNode(void);
+static Node * Node_new(void);
 
 static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
@@ -100,13 +96,14 @@ static PyMethodDef BinaryTree_methods[] = {
 static PySequenceMethods BinaryTree_sequence;
 
 static void Node_dealloc(Node * self) {
+	PyObject_GC_UnTrack(self);
 	Node_clear(self);
+
 	Py_TYPE((PyObject *) self)->tp_free((PyObject *) self);
 
 	return;
 }
 
-/*
 static int Node_traverse(Node * self, visitproc visit, void * arg) {
 	Py_VISIT(self->item);
 	Py_VISIT((PyObject *) self->lchild);
@@ -114,10 +111,17 @@ static int Node_traverse(Node * self, visitproc visit, void * arg) {
 
 	return 0;
 }
-*/
 
 static void Node_clear(Node * self) {
 	Py_CLEAR(self->item);
+	/* Since Node objects are not exposed, the only reference
+	 * to a node should be that of his parent.
+	 */
+	if ( self->lchild )
+		assert(self->lchild->ob_refcnt == 1);
+	if ( self->rchild )
+		assert(self->rchild->ob_refcnt == 1);
+
 	Py_CLEAR(self->lchild);
 	Py_CLEAR(self->rchild);
 
@@ -125,20 +129,23 @@ static void Node_clear(Node * self) {
 }
 
 static void BinaryTree_dealloc(BinaryTree * self) {
+	PyObject_GC_UnTrack(self);
 	BinaryTree_clear(self);
 	Py_TYPE((PyObject *) self)->tp_free((PyObject *) self);
 
 	return;
 }
 
-/*
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg) {
 	Py_VISIT(self->root);
 
 	return 0;
-}*/
+}
 
 static void BinaryTree_clear(BinaryTree * self) {
+	if ( self->root )
+		assert(self->root->ob_refcnt == 1);
+
 	Py_CLEAR(self->root);
 
 	return;
@@ -219,20 +226,19 @@ static void Node_updateHeight(Node * node) {
 	return;
 }
 
-/* Creates and returns a new leaf node.
+/* Creates and returns an empty leaf node.
  * Returns a new reference.
  */
-static Node * Node_newNode(void) {
+static Node * Node_new(void) {
 	Node * newnode;
 	
-	newnode = PyObject_New(Node, &NodeType);	
+	newnode = PyObject_GC_New(Node, &NodeType);	
 	if ( newnode == NULL ) return NULL;
 
 	/* Initializing as a leaf */
-	newnode->lchild = NULL;
-	newnode->rchild = NULL;
-	newnode->balance = 0;
 	newnode->height = 1;
+
+	PyObject_GC_Track(newnode);
 	
 	return newnode;
 }
@@ -248,7 +254,6 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 		case 1:
 			if ( root->lchild == NULL ) {
 				/* Base case: simple insertion */
-				Py_INCREF(new);
 				root->lchild = new;
 				root->balance--;
 
@@ -293,7 +298,6 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 		case -1:
 			if ( root->rchild == NULL ) {
 				/* Base case: simple insertion */
-				Py_INCREF(new);
 				root->rchild = new;
 				root->balance++;
 
@@ -340,7 +344,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	Node * newnode;
 
 	/* Create a new container */
-	newnode = Node_newNode();
+	newnode = Node_new();
 	if ( newnode == NULL ) return NULL;
 
 	Py_INCREF(new);
@@ -400,13 +404,14 @@ initbinarytree(void) {
 	PyObject * module;
 
 	/* NodeType setup */
-	NodeType.tp_new = (newfunc) PyType_GenericNew;
 	NodeType.tp_basicsize = sizeof(Node);
 	NodeType.tp_name = "binarytree.Node";
 	NodeType.tp_doc = "An internal data container.";
-	NodeType.tp_flags = Py_TPFLAGS_DEFAULT;
+	NodeType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC;
 	NodeType.tp_alloc = PyType_GenericAlloc;
 	NodeType.tp_dealloc = (destructor) Node_dealloc;
+	NodeType.tp_traverse = (traverseproc) Node_traverse;
+	NodeType.tp_clear = (inquiry) Node_clear;
 	
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
@@ -414,15 +419,18 @@ initbinarytree(void) {
 	BinaryTree_sequence.sq_length = (lenfunc) BinaryTree_length;
 	BinaryTree_sequence.sq_contains = (objobjproc) BinaryTree_contains;
 
-	BinaryTreeType.tp_new = PyType_GenericNew;
+	BinaryTreeType.tp_new = (newfunc) PyType_GenericNew;
 	BinaryTreeType.tp_basicsize = sizeof(BinaryTree);
 	BinaryTreeType.tp_name = "binarytree.BinaryTree";
 	BinaryTreeType.tp_doc = "The main binary tree class.";
 	BinaryTreeType.tp_flags = Py_TPFLAGS_DEFAULT |
-				Py_TPFLAGS_BASETYPE;
+				Py_TPFLAGS_BASETYPE |
+				Py_TPFLAGS_HAVE_GC;
 	BinaryTreeType.tp_dealloc = (destructor) BinaryTree_dealloc;
 	BinaryTreeType.tp_methods = BinaryTree_methods;
 	BinaryTreeType.tp_as_sequence = &BinaryTree_sequence;
+	BinaryTreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
+	BinaryTreeType.tp_clear = (inquiry) BinaryTree_clear;
 
 	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
