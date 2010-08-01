@@ -174,12 +174,12 @@ static Node * rotateLeft(Node * root) {
 	
 	if ( newroot ) {
 		root->rchild = newroot->lchild;
-		newroot->lchild = root;
-
 		Node_updateHeight(root);
-		NODE_UPDATE_BALANCE(root);
 		
+		newroot->lchild = root;
 		Node_updateHeight(newroot);
+
+		NODE_UPDATE_BALANCE(root);
 		NODE_UPDATE_BALANCE(newroot);
 
 		return newroot;
@@ -199,12 +199,12 @@ static Node * rotateRight(Node * root) {
 
 	if ( newroot ) {
 		root->lchild = newroot->rchild;
-		newroot->rchild = root;
-
 		Node_updateHeight(root);
-		NODE_UPDATE_BALANCE(root);
 		
+		newroot->rchild = root;
 		Node_updateHeight(newroot);
+		
+		NODE_UPDATE_BALANCE(root);
 		NODE_UPDATE_BALANCE(newroot);
 
 		return newroot;
