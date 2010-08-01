@@ -237,6 +237,11 @@ static Node * Node_new(void) {
 
 	/* Initializing as a leaf */
 	newnode->height = 1;
+	newnode->balance = 0;
+	
+	newnode->lchild = NULL;
+	newnode->rchild = NULL;
+	newnode->item = NULL;
 
 	PyObject_GC_Track(newnode);
 	
