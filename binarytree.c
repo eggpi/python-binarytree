@@ -63,6 +63,7 @@ static void Node_clear(Node * self);
 /* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
+static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
 
 /* XXX - Needed for garbage collection, which I haven't managed to get working
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
@@ -85,7 +86,10 @@ static PyTypeObject BinaryTreeType = {
 
 static PyMethodDef BinaryTree_methods[] = {
 	{ "insert", (PyCFunction) BinaryTree_insert, METH_O,
-	"Inserts the parameter into the tree, without creating duplicates"
+	"Inserts the parameter into the tree, without creating duplicates."
+	},
+	{"locate", (PyCFunction) BinaryTree_locate, METH_O,
+	"True/False if the parameter exists in the tree."
 	},
 	{NULL}, /* Sentinel */
 };
@@ -325,6 +329,29 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 
 	self->ob_size++;
 	Py_RETURN_NONE;
+}
+
+static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
+	Node * current = self->root;
+
+	while ( current ) {
+		switch ( PyObject_Compare(current->item, target) ) {
+			case 0:
+				Py_RETURN_TRUE;
+			case 1:
+				/* Descend left */
+				current = current->lchild;
+				break;
+			case -1:
+				/* Descend right */
+				current = current->rchild;
+				break;
+			default:
+				return NULL;
+		}
+	}
+
+	Py_RETURN_FALSE;
 }
 
 #ifndef PyMODINIT_FUNC
