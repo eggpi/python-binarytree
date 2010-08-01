@@ -198,13 +198,10 @@ static void Node_updateHeight(Node * node) {
 }
 
 static Node * Node_insert(Node * root, Node * new) {
-	int left_right; /* -1 when descending left, 1 for right */
-	int child_balance;
+	int child_height;
 	Node * newchild;
 
-	left_right = PyObject_Compare(root->item, new->item);
-
-	switch ( left_right ) {
+	switch ( PyObject_Compare(root->item, new->item) ) {
 		case 0:
 			return root; /* Node already in the tree */
 		case 1:
@@ -221,38 +218,39 @@ static Node * Node_insert(Node * root, Node * new) {
 			}
 
 			/* Descend left */
-			child_balance = root->lchild->balance;
+			child_height = root->lchild->height;
+
 			newchild = Node_insert(root->lchild, new);
 			if ( newchild == NULL ) return NULL;
 
-			if ( newchild != root->lchild ) {
-				/* Tree has already been rotated */
+			/* Subtree has already been rebalanced. */
+			if ( root->lchild->balance == 0 ) {
 				root->lchild = newchild;
 				return root;
 			}
 
-			/* Insertion simply balanced the child subtree,
-			 * there's no need for rebalancing */
-			if ( root->lchild->balance == 0 ) return root;
-
-			/* Neither the child nor its balance has been
-			 * altered: nothing to do here.
-			 * Also handles the case in which the node was
-			 * already in the tree.
+			/* No change in height.
+			 * Either the insertion balanced the left subtree,
+			 * or there has already been a rebalancing somewhere
+			 * along the way up here.
+			 * Nothing left to do but except updating lchild.
 			 */
-			if ( child_balance == root->lchild->balance )
+			if ( child_height == root->lchild->height ) {
+				root->lchild = newchild;
 				return root;
-			
-			/* Fixing balance of the root */
-			root->balance--;
-			
-			/* Left child is now at least as tall as right tree */
-			root->height = root->lchild->height + 1;
+			}
 
-			/* No need for rebalancing */
+			assert(root->lchild->height == 1 + child_height);
+			assert(newchild == root->lchild);
+			
+			/* Fixing balance and height of the root */
+			root->balance--;
+			root->height++;
+
+			/* Do we need to rebalance? */
 			if ( root->balance > -2 ) return root;
 
-			if ( child_balance < root->lchild->balance ) {
+			if ( root->lchild->balance == 1 ) {
 				/* Left-right case */
 				root->lchild = rotateLeft(root->lchild);
 			}
@@ -262,51 +260,53 @@ static Node * Node_insert(Node * root, Node * new) {
 
 		case -1:
 			if ( root->rchild == NULL ) {
+				/* Base case: simple insertion */
 				Py_INCREF(new);
 				root->rchild = new;
 				root->balance++;
-				
+
 				/* Unbalancing increases height */
 				if ( root->balance ) root->height++;
-
+				
 				return root;
 			}
 
 			/* Descend right.
 			 * Symmetrical to the left case above.
 			 */
-			child_balance = root->rchild->balance;
+			child_height = root->rchild->height;
+
 			newchild = Node_insert(root->rchild, new);
 			if ( newchild == NULL ) return NULL;
 
-			if ( newchild != root->rchild ) {
+			if ( child_height == root->rchild->height ) {
 				root->rchild = newchild;
 				return root;
 			}
-			
-			if ( root->rchild->balance == 0 ) return root;
 
-			if ( child_balance == root->rchild->balance )
+			if ( root->rchild->balance == 0 ) {
+				root->rchild = newchild;
 				return root;
+			}
 
-			root->balance++;
+			assert(root->rchild->height == 1 + child_height);
+			assert(newchild == root->rchild);
 			
-			/* Right child must be taller now */
-			root->height = root->rchild->height + 1;
+			root->balance++;
+			root->height++;
 
 			if ( root->balance < 2 ) return root;
 
-			if ( child_balance > root->rchild->balance ) {
+			if ( root->rchild->balance == -1 ) {
 				/* Right-left case */
 				root->rchild = rotateRight(root->rchild);
 			}
 
-			/* Right-right case */
+			/* Right-Right case */
 			return rotateLeft(root);
-
-		default:
-			return NULL; /* Unexpected result in comparison */
 	}
+
+	return NULL; /* Unexpected result in comparison */
 }
 
 /* Inserts 'new' into a binary tree.
