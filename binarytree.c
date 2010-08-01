@@ -54,7 +54,6 @@ typedef struct {
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
 static Node * Node_insert(Node * root, Node * new);
-
 /* XXX - Needed for garbage collection, which I haven't managed to get to work
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 */
@@ -62,13 +61,14 @@ static void Node_clear(Node * self);
 
 /* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
-static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
-static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
-
 /* XXX - Needed for garbage collection, which I haven't managed to get working
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 */
 static void BinaryTree_clear(BinaryTree * self);
+
+/* Protoypes for BinaryTree methods */
+static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
+static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
 
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
