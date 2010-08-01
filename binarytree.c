@@ -53,7 +53,7 @@ typedef struct {
 
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
-static Node * Node_insert(Node * root, Node * new);
+static Node * Node_insert(Node * root, Node * new, int * node_no);
 /* XXX - Needed for garbage collection, which I haven't managed to get to work
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 */
@@ -239,7 +239,7 @@ static Node * Node_newNode(void) {
 
 /* Inserts 'new' into the tree whose root is 'root'.
  * Returns the new root of the tree, or NULL in case of error. */
-static Node * Node_insert(Node * root, Node * new) {
+static Node * Node_insert(Node * root, Node * new, int * node_no) {
 	int child_height;
 
 	switch ( PyObject_Compare(root->item, new->item) ) {
@@ -254,14 +254,15 @@ static Node * Node_insert(Node * root, Node * new) {
 
 				/* Unbalancing increases height */
 				if ( root->balance ) root->height++;
-				
+
+				*node_no += 1;				
 				return root;
 			}
 
 			/* Descend left */
 			child_height = root->lchild->height;
 
-			root->lchild = Node_insert(root->lchild, new);
+			root->lchild = Node_insert(root->lchild, new, node_no);
 			if ( root->lchild == NULL ) return NULL;
 
 			/* No change in height.
@@ -299,6 +300,7 @@ static Node * Node_insert(Node * root, Node * new) {
 				/* Unbalancing increases height */
 				if ( root->balance ) root->height++;
 				
+				*node_no += 1;
 				return root;
 			}
 
@@ -307,7 +309,7 @@ static Node * Node_insert(Node * root, Node * new) {
 			 */
 			child_height = root->rchild->height;
 
-			root->rchild = Node_insert(root->rchild, new);
+			root->rchild = Node_insert(root->rchild, new, node_no);
 			if ( root->rchild == NULL ) return NULL;
 
 			if ( child_height == root->rchild->height )
@@ -346,7 +348,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 
 	if ( self->root != NULL ) {
 		/* Insert into the existing tree */
-		self->root = Node_insert(self->root, newnode);
+		self->root = Node_insert(self->root, newnode, &self->ob_size);
 		
 		if ( self->root == NULL ) {
 			Py_DECREF(newnode);
@@ -357,11 +359,9 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	} else {
 		/* First insertion */
 		self->root = newnode;
+		self->ob_size++;
 	}
 
-	/* XXX - Shouldn't increase when trying to insert
-	 * a node that is already in the tree */
-	self->ob_size++;
 	Py_RETURN_NONE;
 }
 
