@@ -191,7 +191,7 @@ static void Node_updateHeight(Node * node) {
 
 	lheight = node->lchild ? node->lchild->height : 0;
 	rheight = node->rchild ? node->rchild->height : 0;
-
+	
 	node->height = 1 + ((lheight > rheight) ? lheight : rheight);
 
 	return;
@@ -199,7 +199,6 @@ static void Node_updateHeight(Node * node) {
 
 static Node * Node_insert(Node * root, Node * new) {
 	int child_height;
-	Node * newchild;
 
 	switch ( PyObject_Compare(root->item, new->item) ) {
 		case 0:
@@ -220,28 +219,18 @@ static Node * Node_insert(Node * root, Node * new) {
 			/* Descend left */
 			child_height = root->lchild->height;
 
-			newchild = Node_insert(root->lchild, new);
-			if ( newchild == NULL ) return NULL;
-
-			/* Subtree has already been rebalanced. */
-			if ( root->lchild->balance == 0 ) {
-				root->lchild = newchild;
-				return root;
-			}
+			root->lchild = Node_insert(root->lchild, new);
+			if ( root->lchild == NULL ) return NULL;
 
 			/* No change in height.
 			 * Either the insertion balanced the left subtree,
 			 * or there has already been a rebalancing somewhere
 			 * along the way up here.
-			 * Nothing left to do but except updating lchild.
 			 */
-			if ( child_height == root->lchild->height ) {
-				root->lchild = newchild;
+			if ( child_height == root->lchild->height )
 				return root;
-			}
 
 			assert(root->lchild->height == 1 + child_height);
-			assert(newchild == root->lchild);
 			
 			/* Fixing balance and height of the root */
 			root->balance--;
@@ -276,21 +265,13 @@ static Node * Node_insert(Node * root, Node * new) {
 			 */
 			child_height = root->rchild->height;
 
-			newchild = Node_insert(root->rchild, new);
-			if ( newchild == NULL ) return NULL;
+			root->rchild = Node_insert(root->rchild, new);
+			if ( root->rchild == NULL ) return NULL;
 
-			if ( child_height == root->rchild->height ) {
-				root->rchild = newchild;
+			if ( child_height == root->rchild->height )
 				return root;
-			}
-
-			if ( root->rchild->balance == 0 ) {
-				root->rchild = newchild;
-				return root;
-			}
 
 			assert(root->rchild->height == 1 + child_height);
-			assert(newchild == root->rchild);
 			
 			root->balance++;
 			root->height++;
@@ -312,7 +293,7 @@ static Node * Node_insert(Node * root, Node * new) {
 /* Inserts 'new' into a binary tree.
  * Returns 1 on success, 0 on error. */
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
-	Node * newnode, * newroot = NULL;
+	Node * newnode;
 
 	/* Create a new container */
 	newnode = PyObject_New(Node, &NodeType);	
@@ -329,14 +310,13 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 
 	if ( self->root != NULL ) {
 		/* Insert into the existing tree */
-		newroot = Node_insert(self->root, newnode);
+		self->root = Node_insert(self->root, newnode);
 		
-		if ( newroot == NULL ) {
+		if ( self->root == NULL ) {
 			Py_DECREF(newnode);
 			return NULL;
 		}
 		
-		self->root = newroot;
 		Node_updateHeight(self->root);
 	} else {
 		/* First insertion */
