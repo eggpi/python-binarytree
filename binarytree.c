@@ -67,6 +67,7 @@ static BinaryTree * Node_rchild(Node * self);
 static Node * Node_insert(Node * root, Node * new);
 static int Node_inOrder(Node * root, PyObject * func);
 static int Node_preOrder(Node * root, PyObject * func);
+static int Node_postOrder(Node * root, PyObject * func);
 
 /* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
@@ -79,6 +80,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
 static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
 static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func);
 static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func);
+static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func);
 
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
@@ -438,7 +440,7 @@ static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 	Py_RETURN_FALSE;
 }
 
-/* Traverses the tree with root at 'root' in-order applying
+/* Traverses the subtree with root at 'root' in-order applying
  * 'func' to every item.
  * Returns 1 on success, -1 on error.
  */
@@ -458,7 +460,7 @@ static int Node_inOrder(Node * root, PyObject * func) {
 	return Node_inOrder(root->rchild, func);
 }
 
-/* Traverses the tree with root at 'root' in pre-order applying
+/* Traverses the subtree with root at 'root' in pre-order applying
  * 'func' to every item.
  * Returns 1 on success, -1 on error.
  */
@@ -475,6 +477,25 @@ static int Node_preOrder(Node * root, PyObject * func) {
 	if ( Node_preOrder(root->lchild, func) == -1 ) return -1;
 
 	return Node_preOrder(root->rchild, func);
+}
+
+/* Traverses the subtree with root at 'root' in post-order
+ * applying 'func' to every item.
+ * Returns 1 on success, -1 on error.
+ */
+static int Node_postOrder(Node * root, PyObject * func) {
+	PyObject * res;
+
+	if ( root == NULL ) return 1;
+	
+	if ( Node_preOrder(root->lchild, func) == -1 ) return -1;
+	if ( Node_preOrder(root->rchild, func) == -1 ) return -1;
+	
+	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
+	if ( res == NULL ) return -1;
+
+	Py_DECREF(res);
+	return 1;
 }
 
 /* Traverses the binary tree in-order, applying 'func' to every item.
@@ -496,6 +517,17 @@ static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func) {
 		Py_RETURN_NONE;
 	}
 	
+	return NULL;
+}
+
+/* Traverses the binary tree in post-order, applying 'func' to every item.
+ * Returns None on success, NULL on failure.
+ */
+static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func) {
+	if ( Node_postOrder(self->root, func) == 1) {
+		Py_RETURN_NONE;
+	}
+
 	return NULL;
 }
 
