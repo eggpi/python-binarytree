@@ -286,8 +286,8 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 			assert(root->lchild->height == 1 + child_height);
 			
 			/* Fixing balance and height of the root */
-			root->balance--;
-			root->height++;
+			Node_updateHeight(root);
+			NODE_UPDATE_BALANCE(root);
 
 			/* Do we need to rebalance? */
 			if ( root->balance > -2 ) return root;
@@ -326,8 +326,8 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 
 			assert(root->rchild->height == 1 + child_height);
 			
-			root->balance++;
-			root->height++;
+			Node_updateHeight(root);
+			NODE_UPDATE_BALANCE(root);
 
 			if ( root->balance < 2 ) return root;
 
