@@ -135,7 +135,7 @@ static PyMethodDef BinaryTree_methods[] = {
 
 static PyMemberDef BinaryTree_members[] = {
 	{"root",
-	T_OBJECT_EX,
+	T_OBJECT,
 	offsetof(BinaryTree, root),
 	READONLY,
 	"Root of the tree.",
