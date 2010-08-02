@@ -62,6 +62,8 @@ static void Node_clear(Node * self);
  * Generally, the corresponding BinaryTree methods are simply bindings
  * to these.
  */
+static BinaryTree * Node_lchild(Node * self);
+static BinaryTree * Node_rchild(Node * self);
 static Node * Node_insert(Node * root, Node * new);
 static int Node_inOrder(Node * root, PyObject * func);
 static int Node_preOrder(Node * root, PyObject * func);
@@ -89,6 +91,26 @@ static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
 };
 
+static PyGetSetDef Node_getsetters[] = {
+	{"left_child",
+	(getter) Node_lchild,
+	},
+	{"right_child",
+	(getter) Node_rchild,
+	},
+	{NULL}, /* Sentinel */
+};
+
+static PyMemberDef Node_members[] = {
+	{"item",
+	T_OBJECT_EX,
+	offsetof(Node, item),
+	READONLY,
+	"The item kept by this node.",
+	},
+	{NULL}, /* Sentinel */
+};
+
 static PyTypeObject BinaryTreeType = {
 	PyObject_HEAD_INIT(NULL)
 };
@@ -109,7 +131,45 @@ static PyMethodDef BinaryTree_methods[] = {
 	{NULL}, /* Sentinel */
 };
 
+static PyMemberDef BinaryTree_members[] = {
+	{"root",
+	T_OBJECT_EX,
+	offsetof(BinaryTree, root),
+	READONLY,
+	"Root of the tree.",
+	},
+	{NULL}, /* Sentinel */
+};
+
 static PySequenceMethods BinaryTree_sequence;
+
+/* Returns the left subtree of a given node, as a new reference */
+static BinaryTree * Node_lchild(Node * self) {
+	BinaryTree * subtree;
+
+	subtree = PyObject_GC_New(BinaryTree, &BinaryTreeType);
+	if ( subtree == NULL ) return NULL;
+
+	Py_XINCREF(self->lchild);
+	subtree->root = self->lchild;
+	PyObject_GC_Track((PyObject *) subtree);
+
+	return subtree;
+}
+
+/* Returns the right subtree of a given node, as a new reference */
+static BinaryTree * Node_rchild(Node * self) {
+	BinaryTree * subtree;
+
+	subtree = PyObject_GC_New(BinaryTree, &BinaryTreeType);
+	if ( subtree == NULL ) return NULL;
+
+	Py_XINCREF(self->rchild);
+	subtree->root = self->rchild;
+	PyObject_GC_Track((PyObject *) subtree);
+
+	return subtree;
+}
 
 static void Node_dealloc(Node * self) {
 	PyObject_GC_UnTrack(self);
@@ -130,13 +190,6 @@ static int Node_traverse(Node * self, visitproc visit, void * arg) {
 
 static void Node_clear(Node * self) {
 	Py_CLEAR(self->item);
-	/* Since Node objects are not exposed, the only reference
-	 * to a node should be that of his parent.
-	 */
-	if ( self->lchild )
-		assert(self->lchild->ob_refcnt == 1);
-	if ( self->rchild )
-		assert(self->rchild->ob_refcnt == 1);
 
 	Py_CLEAR(self->lchild);
 	Py_CLEAR(self->rchild);
@@ -159,9 +212,6 @@ static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg) {
 }
 
 static void BinaryTree_clear(BinaryTree * self) {
-	if ( self->root )
-		assert(self->root->ob_refcnt == 1);
-
 	Py_CLEAR(self->root);
 
 	return;
@@ -465,6 +515,8 @@ initbinarytree(void) {
 	NodeType.tp_traverse = (traverseproc) Node_traverse;
 	NodeType.tp_clear = (inquiry) Node_clear;
 	NodeType.tp_free = PyObject_GC_Del;
+	NodeType.tp_getset = Node_getsetters;
+	NodeType.tp_members = Node_members;
 	
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
@@ -480,6 +532,7 @@ initbinarytree(void) {
 				Py_TPFLAGS_HAVE_GC;
 	BinaryTreeType.tp_dealloc = (destructor) BinaryTree_dealloc;
 	BinaryTreeType.tp_methods = BinaryTree_methods;
+	BinaryTreeType.tp_members = BinaryTree_members;
 	BinaryTreeType.tp_as_sequence = &BinaryTree_sequence;
 	BinaryTreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
 	BinaryTreeType.tp_clear = (inquiry) BinaryTree_clear;
