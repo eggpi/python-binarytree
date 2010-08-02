@@ -38,10 +38,9 @@ typedef struct _Node {
 
 /* The main binary tree class, exposed to the interpreter as BinaryTree.
  * 'root' holds a reference to the root (a Node) of the tree.
- * ob_size (defined in PyObject_VAR_HEAD) holds the number of nodes in the tree
  */
 typedef struct {
-	PyObject_VAR_HEAD
+	PyObject_HEAD
 
 	Node * root;
 } BinaryTree;
@@ -63,7 +62,7 @@ static void Node_clear(Node * self);
  * Generally, the corresponding BinaryTree methods are simply bindings
  * to these.
  */
-static Node * Node_insert(Node * root, Node * new, int * node_no);
+static Node * Node_insert(Node * root, Node * new);
 static int Node_inOrder(Node * root, PyObject * func);
 static int Node_preOrder(Node * root, PyObject * func);
 
@@ -71,7 +70,6 @@ static int Node_preOrder(Node * root, PyObject * func);
 static void BinaryTree_dealloc(BinaryTree * self);
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 static void BinaryTree_clear(BinaryTree * self);
-static Py_ssize_t BinaryTree_length(BinaryTree * self);
 static int BinaryTree_contains(BinaryTree * self, PyObject * value);
 
 /* Protoypes for BinaryTree methods */
@@ -169,10 +167,6 @@ static void BinaryTree_clear(BinaryTree * self) {
 	return;
 }
 
-static Py_ssize_t BinaryTree_length(BinaryTree * self) {
-	return Py_SIZE((PyObject *) self);
-}
-
 static int BinaryTree_contains(BinaryTree * self, PyObject * value) {
 	PyObject * res;
 	
@@ -267,17 +261,14 @@ static Node * Node_new(void) {
 }
 
 /* Inserts 'new' into the tree whose root is 'root'.
- * 'node_no' points to the ob_size field of the corresponding
- * BinaryTree, so that it can be updated when a node is inserted.
  * Returns the new root of the tree, or NULL on failure.
  * Note: Assumes 'new' has been initialized as a leaf.
  */
-static Node * Node_insert(Node * root, Node * new, int * node_no) {
+static Node * Node_insert(Node * root, Node * new) {
 	int child_height = 0;
 
 	if ( root == NULL ) {
 		assert(NODE_IS_LEAF(new));
-		*node_no += 1;
 		return new;
 	}
 
@@ -289,7 +280,7 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 			if ( root->lchild )
 				child_height = root->lchild->height;
 
-			root->lchild = Node_insert(root->lchild, new, node_no);
+			root->lchild = Node_insert(root->lchild, new);
 			if ( root->lchild == NULL ) return NULL;
 
 			/* No change in height.
@@ -324,7 +315,7 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 			if ( root->rchild )
 				child_height = root->rchild->height;
 
-			root->rchild = Node_insert(root->rchild, new, node_no);
+			root->rchild = Node_insert(root->rchild, new);
 			if ( root->rchild == NULL ) return NULL;
 
 			if ( child_height == root->rchild->height )
@@ -361,7 +352,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	Py_INCREF(new);
 	newnode->item = new;
 
-	self->root = Node_insert(self->root, newnode, &self->ob_size);
+	self->root = Node_insert(self->root, newnode);
 	if ( self->root == NULL ) {
 		Py_DECREF(newnode);
 		return NULL;
@@ -478,7 +469,6 @@ initbinarytree(void) {
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
 	/* BinaryTreeType setup */
-	BinaryTree_sequence.sq_length = (lenfunc) BinaryTree_length;
 	BinaryTree_sequence.sq_contains = (objobjproc) BinaryTree_contains;
 
 	BinaryTreeType.tp_new = (newfunc) PyType_GenericNew;
