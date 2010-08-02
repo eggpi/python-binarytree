@@ -470,10 +470,10 @@ initbinarytree(void) {
 	NodeType.tp_name = "binarytree.Node";
 	NodeType.tp_doc = "An internal data container.";
 	NodeType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC;
-	NodeType.tp_alloc = PyType_GenericAlloc;
 	NodeType.tp_dealloc = (destructor) Node_dealloc;
 	NodeType.tp_traverse = (traverseproc) Node_traverse;
 	NodeType.tp_clear = (inquiry) Node_clear;
+	NodeType.tp_free = PyObject_GC_Del;
 	
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
@@ -493,6 +493,7 @@ initbinarytree(void) {
 	BinaryTreeType.tp_as_sequence = &BinaryTree_sequence;
 	BinaryTreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
 	BinaryTreeType.tp_clear = (inquiry) BinaryTree_clear;
+	BinaryTreeType.tp_free = PyObject_GC_Del;
 
 	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
