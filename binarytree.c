@@ -261,26 +261,20 @@ static Node * Node_new(void) {
 /* Inserts 'new' into the tree whose root is 'root'.
  * Returns the new root of the tree, or NULL in case of error. */
 static Node * Node_insert(Node * root, Node * new, int * node_no) {
-	int child_height;
+	int child_height = 0;
+
+	if ( root == NULL ) {
+		*node_no += 1;
+		return new;
+	}
 
 	switch ( PyObject_Compare(root->item, new->item) ) {
 		case 0:
 			return root; /* Node already in the tree */
 		case 1:
-			if ( root->lchild == NULL ) {
-				/* Base case: simple insertion */
-				root->lchild = new;
-				root->balance--;
-
-				/* Unbalancing increases height */
-				if ( root->balance ) root->height++;
-
-				*node_no += 1;				
-				return root;
-			}
-
 			/* Descend left */
-			child_height = root->lchild->height;
+			if ( root->lchild )
+				child_height = root->lchild->height;
 
 			root->lchild = Node_insert(root->lchild, new, node_no);
 			if ( root->lchild == NULL ) return NULL;
@@ -311,22 +305,11 @@ static Node * Node_insert(Node * root, Node * new, int * node_no) {
 			return rotateRight(root);
 
 		case -1:
-			if ( root->rchild == NULL ) {
-				/* Base case: simple insertion */
-				root->rchild = new;
-				root->balance++;
-
-				/* Unbalancing increases height */
-				if ( root->balance ) root->height++;
-				
-				*node_no += 1;
-				return root;
-			}
-
 			/* Descend right.
 			 * Symmetrical to the left case above.
 			 */
-			child_height = root->rchild->height;
+			if ( root->rchild )
+				child_height = root->rchild->height;
 
 			root->rchild = Node_insert(root->rchild, new, node_no);
 			if ( root->rchild == NULL ) return NULL;
@@ -365,22 +348,12 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 	Py_INCREF(new);
 	newnode->item = new;
 
-	if ( self->root != NULL ) {
-		/* Insert into the existing tree */
-		self->root = Node_insert(self->root, newnode, &self->ob_size);
-		
-		if ( self->root == NULL ) {
-			Py_DECREF(newnode);
-			return NULL;
-		}
-		
-		Node_updateHeight(self->root);
-	} else {
-		/* First insertion */
-		self->root = newnode;
-		self->ob_size++;
+	self->root = Node_insert(self->root, newnode, &self->ob_size);
+	if ( self->root == NULL ) {
+		Py_DECREF(newnode);
+		return NULL;
 	}
-
+		
 	Py_RETURN_NONE;
 }
 
