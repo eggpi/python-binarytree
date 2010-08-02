@@ -53,9 +53,15 @@ typedef struct {
 
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
-static Node * Node_insert(Node * root, Node * new, int * node_no);
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 static void Node_clear(Node * self);
+
+/* Prototypes for Node methods.
+ * Generally, the corresponding BinaryTree methods are simply bindings
+ * to these.
+ */
+static Node * Node_insert(Node * root, Node * new, int * node_no);
+static int Node_inOrder(Node * root, PyObject * func);
 
 /* Prototypes for BinaryTreeType methods */
 static void BinaryTree_dealloc(BinaryTree * self);
@@ -67,6 +73,7 @@ static int BinaryTree_contains(BinaryTree * self, PyObject * value);
 /* Protoypes for BinaryTree methods */
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
 static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
+static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func);
 
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
@@ -89,6 +96,9 @@ static PyMethodDef BinaryTree_methods[] = {
 	},
 	{"locate", (PyCFunction) BinaryTree_locate, METH_O,
 	"True/False if the parameter exists in the tree."
+	},
+	{"in_order", (PyCFunction) BinaryTree_inOrder, METH_O,
+	"in_order(callable) -> apply 'callable' to each node, in-order."
 	},
 	{NULL}, /* Sentinel */
 };
@@ -399,6 +409,38 @@ static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 	}
 
 	Py_RETURN_FALSE;
+}
+
+/* Traverses the tree with root at 'root' in-order applying
+ * 'func' to every item.
+ * Returns 1 on success, 0 on error.
+ */
+static int Node_inOrder(Node * root, PyObject * func) {
+	PyObject * res;
+
+	if ( root == NULL ) return 1;
+
+	if ( Node_inOrder(root->lchild, func) == -1 ) return -1;
+
+	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
+	if ( res == NULL ) return -1;
+	
+	/* The new reference returned by the call won't be used. */
+	Py_DECREF(res);
+
+	if ( Node_inOrder(root->rchild, func) == -1 ) return -1;
+
+	return 1;
+}
+
+/* Traverses the binary tree in-order, applying 'func' to every item.
+ * Returns None on success, NULL on failure.
+ */
+static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func) {
+	if ( Node_inOrder(self->root, func) == 1 )
+		Py_RETURN_NONE;
+	
+	return NULL;
 }
 
 #ifndef PyMODINIT_FUNC
