@@ -24,7 +24,8 @@
  * node.
  * 'balance' is the height balance of the node. -1 for left-unbalanced, 0 for
  * balanced and +1 for right-unbalanced.
- * 'height' keeps the size of the longest path from this node to a leaf.
+ * 'height' keeps the size maximum number of nodes between a node and a leaf.
+ * It is initialized as 1 for leaves.
  */ 
 typedef struct _Node {
 	PyObject_HEAD
@@ -49,7 +50,9 @@ typedef struct {
 	(node)->balance = ((node)->rchild ? (node)->rchild->height : 0) \
 			- ((node)->lchild ? (node)->lchild->height : 0)
 
-#define NODE_IS_LEAF(node) !((node)->rchild || (node)->rchild)
+#define NODE_IS_LEAF(node) ((node)->height == 1 ) && \
+			!((node)->rchild || (node)->rchild) && \
+			((node)->balance == 0)
 
 /* Prototypes for NodeType methods */
 static void Node_dealloc(Node * self);
@@ -259,11 +262,16 @@ static Node * Node_new(void) {
 }
 
 /* Inserts 'new' into the tree whose root is 'root'.
- * Returns the new root of the tree, or NULL in case of error. */
+ * 'node_no' points to the ob_size field of the corresponding
+ * BinaryTree, so that it can be updated when a node is inserted.
+ * Returns the new root of the tree, or NULL on failure.
+ * Note: Assumes 'new' has been initialized as a leaf.
+ */
 static Node * Node_insert(Node * root, Node * new, int * node_no) {
 	int child_height = 0;
 
 	if ( root == NULL ) {
+		assert(NODE_IS_LEAF(new));
 		*node_no += 1;
 		return new;
 	}
