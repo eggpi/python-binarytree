@@ -104,10 +104,7 @@ static PyGetSetDef Node_getsetters[] = {
 };
 
 static PyMemberDef Node_members[] = {
-	{"item",
-	T_OBJECT_EX,
-	offsetof(Node, item),
-	READONLY,
+	{"item", T_OBJECT_EX, offsetof(Node, item), READONLY,
 	"The item kept by this node.",
 	},
 	{NULL}, /* Sentinel */
@@ -122,7 +119,7 @@ static PyMethodDef BinaryTree_methods[] = {
 	"Inserts the parameter into the tree, without creating duplicates."
 	},
 	{"locate", (PyCFunction) BinaryTree_locate, METH_O,
-	"True/False if the parameter exists in the tree."
+	"The Node that contains the parameter if it is in the tree, or None."
 	},
 	{"in_order", (PyCFunction) BinaryTree_inOrder, METH_O,
 	"in_order(callable) -> apply 'callable' to each node, in-order."
@@ -134,10 +131,7 @@ static PyMethodDef BinaryTree_methods[] = {
 };
 
 static PyMemberDef BinaryTree_members[] = {
-	{"root",
-	T_OBJECT,
-	offsetof(BinaryTree, root),
-	READONLY,
+	{"root", T_OBJECT, offsetof(BinaryTree, root), READONLY,
 	"Root of the tree.",
 	},
 	{NULL}, /* Sentinel */
@@ -225,7 +219,7 @@ static int BinaryTree_contains(BinaryTree * self, PyObject * value) {
 	res = BinaryTree_locate(self, value);
 	if ( res == NULL ) return -1;
 
-	return ( res == Py_True ) ? 1 : 0;
+	return ( res == Py_None ) ? 0 : 1;
 }
 
 /* Rotates the subtree starting at 'root' to the left.
@@ -414,8 +408,8 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 }
 
 /* Finds 'target' in the binary tree.
- * Returns True/False if 'target' is or not in the tree, or NULL in
- * case of error.
+ * Returns the node containing 'target' as a new reference if it is in
+ * the tree, None if it is not, or NULL upon failure.
  */
 static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 	Node * current = self->root;
@@ -423,7 +417,8 @@ static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 	while ( current ) {
 		switch ( PyObject_Compare(current->item, target) ) {
 			case 0:
-				Py_RETURN_TRUE;
+				Py_INCREF((PyObject *) current);
+				return (PyObject *) current;
 			case 1:
 				/* Descend left */
 				current = current->lchild;
@@ -437,7 +432,7 @@ static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target) {
 		}
 	}
 
-	Py_RETURN_FALSE;
+	Py_RETURN_NONE;
 }
 
 /* Traverses the subtree with root at 'root' in-order applying
