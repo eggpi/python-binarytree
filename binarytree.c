@@ -65,6 +65,7 @@ static void Node_clear(Node * self);
 static BinaryTree * Node_lchild(Node * self);
 static BinaryTree * Node_rchild(Node * self);
 static Node * Node_insert(Node * root, Node * new);
+static Node * Node_copytree(Node * root);
 static int Node_inOrder(Node * root, PyObject * func);
 static int Node_preOrder(Node * root, PyObject * func);
 static int Node_postOrder(Node * root, PyObject * func);
@@ -495,6 +496,37 @@ static int Node_postOrder(Node * root, PyObject * func) {
 
 	Py_DECREF(res);
 	return 1;
+}
+
+/* Creates a shallow copy of the tree starting at 'root'. Returns the
+ * new (copied) root as a new reference or NULL on failure.
+ */
+static Node * Node_copytree(Node * root) {
+	Node * newroot;
+
+	newroot = Node_new();
+	if ( newroot == NULL ) return NULL;
+
+	memcpy((void *) newroot, (void *) root, sizeof(Node));
+	Py_INCREF(newroot->item);
+	
+	if ( newroot->lchild != NULL ) {
+		newroot->lchild = Node_copytree(newroot->lchild);
+		if ( newroot->lchild == NULL ) {
+			Node_dealloc(newroot);
+			return NULL;
+		}
+	}
+
+	if ( newroot->rchild != NULL ) {
+		newroot->rchild = Node_copytree(newroot->rchild);
+		if ( newroot->rchild == NULL ) {
+			Node_dealloc(newroot);
+			return NULL;
+		}
+	}
+	
+	return newroot;
 }
 
 /* Traverses the binary tree in-order, applying 'func' to every item.
