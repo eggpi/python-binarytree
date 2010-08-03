@@ -96,9 +96,13 @@ static PyTypeObject NodeType = {
 static PyGetSetDef Node_getsetters[] = {
 	{"left_child",
 	(getter) Node_lchild,
+	NULL,
+	"The left subtree of this node."
 	},
 	{"right_child",
 	(getter) Node_rchild,
+	NULL,
+	"The right subtree of this node."
 	},
 	{NULL}, /* Sentinel */
 };
@@ -536,7 +540,7 @@ initbinarytree(void) {
 	/* NodeType setup */
 	NodeType.tp_basicsize = sizeof(Node);
 	NodeType.tp_name = "binarytree.Node";
-	NodeType.tp_doc = "An internal data container.";
+	NodeType.tp_doc = "A data container.";
 	NodeType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC;
 	NodeType.tp_dealloc = (destructor) Node_dealloc;
 	NodeType.tp_traverse = (traverseproc) Node_traverse;
@@ -568,10 +572,13 @@ initbinarytree(void) {
 	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
 	module = Py_InitModule3("binarytree", NULL,
-				"A simple binary search tree.");
+				"A self-balancing binary search tree.");
 	
 	Py_INCREF(&BinaryTreeType);
 	PyModule_AddObject(module, "BinaryTree", (PyObject *) &BinaryTreeType);
+	
+	Py_INCREF(&NodeType);
+	PyModule_AddObject(module, "Node", (PyObject *) &NodeType);
 
 	return;
 }
