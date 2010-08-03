@@ -45,6 +45,8 @@ typedef struct {
 	Node * root;
 } BinaryTree;
 
+typedef BinaryTree Subtree;
+
 #define NODE_UPDATE_BALANCE(node) \
 	(node)->balance = ((node)->rchild ? (node)->rchild->height : 0) \
 			- ((node)->lchild ? (node)->lchild->height : 0)
@@ -82,6 +84,9 @@ static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
 static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func);
 static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func);
 static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func);
+
+/* Prototypes for Subtree methods */
+static PyObject * Subtree_copytree(Subtree * self);
 
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
@@ -144,11 +149,31 @@ static PyMemberDef BinaryTree_members[] = {
 
 static PySequenceMethods BinaryTree_sequence;
 
+static PyTypeObject SubtreeType = {
+	PyObject_HEAD_INIT(NULL)
+};
+
+static PyMethodDef Subtree_methods[] = {
+	{"locate", (PyCFunction) BinaryTree_locate, METH_O,
+	"The Node that contains the parameter if it is in the tree, or None."
+	},
+	{"in_order", (PyCFunction) BinaryTree_inOrder, METH_O,
+	"in_order(callable) -> apply 'callable' to each node, in-order."
+	},
+	{"pre_order", (PyCFunction) BinaryTree_preOrder, METH_O,
+	"pre_order(callable) -> apply 'callable' to each node, pre-order."
+	},
+	{"make_tree", (PyCFunction) Subtree_copytree, METH_NOARGS,
+	"Returns a shallow copy of this subtree as a new BinaryTree."
+	},
+	{NULL}, /* Sentinel */
+};
+
 /* Returns the left subtree of a given node, as a new reference */
 static BinaryTree * Node_lchild(Node * self) {
 	BinaryTree * subtree;
 
-	subtree = PyObject_GC_New(BinaryTree, &BinaryTreeType);
+	subtree = PyObject_GC_New(Subtree, &SubtreeType);
 	if ( subtree == NULL ) return NULL;
 
 	Py_XINCREF(self->lchild);
@@ -162,7 +187,7 @@ static BinaryTree * Node_lchild(Node * self) {
 static BinaryTree * Node_rchild(Node * self) {
 	BinaryTree * subtree;
 
-	subtree = PyObject_GC_New(BinaryTree, &BinaryTreeType);
+	subtree = PyObject_GC_New(Subtree, &SubtreeType);
 	if ( subtree == NULL ) return NULL;
 
 	Py_XINCREF(self->rchild);
@@ -562,6 +587,17 @@ static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func) {
 	return NULL;
 }
 
+static PyObject * Subtree_copytree(Subtree * self) {
+	Subtree * new;
+
+	new = PyObject_GC_New(BinaryTree, &BinaryTreeType);
+	if ( new == NULL ) return NULL;
+
+	new->root = Node_copytree(self->root);
+
+	return (PyObject *) new;
+}
+
 #ifndef PyMODINIT_FUNC
 #define PyMODINIT_FUNC void
 #endif
@@ -603,6 +639,25 @@ initbinarytree(void) {
 
 	if ( PyType_Ready(&BinaryTreeType) < 0 ) return;
 
+	/* Subtree setup. We don't inherit from BinaryTree because
+	 * Subtrees have different methods.
+	 */
+	SubtreeType.tp_basicsize = sizeof(Subtree);
+	SubtreeType.tp_name = "binarytree.Subtree";
+	SubtreeType.tp_doc = "A read-only subtree of a BinaryTree.";
+	SubtreeType.tp_methods = Subtree_methods;
+	SubtreeType.tp_flags = Py_TPFLAGS_DEFAULT |
+				Py_TPFLAGS_BASETYPE |
+				Py_TPFLAGS_HAVE_GC;
+	SubtreeType.tp_dealloc = (destructor) BinaryTree_dealloc;
+	SubtreeType.tp_members = BinaryTree_members;
+	SubtreeType.tp_as_sequence = &BinaryTree_sequence;
+	SubtreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
+	SubtreeType.tp_clear = (inquiry) BinaryTree_clear;
+	SubtreeType.tp_free = PyObject_GC_Del;
+	
+	if ( PyType_Ready(&SubtreeType) < 0 ) return;
+
 	module = Py_InitModule3("binarytree", NULL,
 				"A self-balancing binary search tree.");
 	
@@ -611,6 +666,9 @@ initbinarytree(void) {
 	
 	Py_INCREF(&NodeType);
 	PyModule_AddObject(module, "Node", (PyObject *) &NodeType);
+	
+	Py_INCREF(&SubtreeType);
+	PyModule_AddObject(module, "Subtree", (PyObject *) &SubtreeType);
 
 	return;
 }
