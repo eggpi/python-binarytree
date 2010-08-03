@@ -97,7 +97,7 @@ static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func);
 static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func);
 
 /* Prototypes for Subtree methods */
-static PyObject * Subtree_copytree(Subtree * self);
+static PyObject * Subtree_maketree(Subtree * self);
 
 /* Left and right rotation */
 static Node * rotateLeft(Node * root);
