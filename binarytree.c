@@ -17,8 +17,7 @@
 #include <Python.h>
 #include <structmember.h>
 
-/* Node objects are not exposed to the Python interpreter. Instead, they act as
- * internal data structures referenced by the main BinaryTree object.
+/* A container for Python objects.
  * 'item' holds the actual data, a reference to a PyObject.
  * 'lchild' and 'rchild' refer to the left and right child nodes of a given
  * node.
@@ -45,6 +44,18 @@ typedef struct {
 	Node * root;
 } BinaryTree;
 
+/* Subtrees safely implement the recursive notion of a binary tree, ie, that
+ * a node's left and right children are themselves roots of smaller trees.
+ * It might be tempting to expose a Node object's left and right subtrees as
+ * BinaryTrees referencing these nodes as their roots.
+ * Unfortunately then, any methods that modify the subtree would also modify
+ * the original tree -- in particular, insertions and removals would mess up
+ * the 'height' and 'balance' fields of all nodes above the root of the
+ * subtree in the original tree.
+ * So we define a new type, a Subtree, which is basically an immutable
+ * BinaryTree that can be safely shallow-copied into a full-fledged
+ * BinaryTree.
+ */
 typedef BinaryTree Subtree;
 
 #define NODE_UPDATE_BALANCE(node) \
@@ -163,7 +174,7 @@ static PyMethodDef Subtree_methods[] = {
 	{"pre_order", (PyCFunction) BinaryTree_preOrder, METH_O,
 	"pre_order(callable) -> apply 'callable' to each node, pre-order."
 	},
-	{"make_tree", (PyCFunction) Subtree_copytree, METH_NOARGS,
+	{"make_tree", (PyCFunction) Subtree_maketree, METH_NOARGS,
 	"Returns a shallow copy of this subtree as a new BinaryTree."
 	},
 	{NULL}, /* Sentinel */
@@ -587,8 +598,12 @@ static PyObject * BinaryTree_postOrder(BinaryTree * self, PyObject * func) {
 	return NULL;
 }
 
-static PyObject * Subtree_copytree(Subtree * self) {
-	Subtree * new;
+/* Copies the contents of a Subtree into a BinaryTree.
+ * Returns a reference to the new BinaryTree or NULL upon
+ * failure.
+ */
+static PyObject * Subtree_maketree(Subtree * self) {
+	BinaryTree * new;
 
 	new = PyObject_GC_New(BinaryTree, &BinaryTreeType);
 	if ( new == NULL ) return NULL;
