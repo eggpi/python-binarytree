@@ -62,6 +62,14 @@ typedef BinaryTree Subtree;
 	(node)->balance = ((node)->rchild ? (node)->rchild->height : 0) \
 			- ((node)->lchild ? (node)->lchild->height : 0)
 
+#define NODE_SET_LEAF(node) do { \
+				(node)->height = 1; \
+				(node)->rchild = NULL; \
+				(node)->lchild = NULL; \
+				(node)->balance = 0; \
+			 } while (0);
+				
+
 #define NODE_IS_LEAF(node) ((node)->height == 1 ) && \
 			!((node)->rchild || (node)->rchild) && \
 			((node)->balance == 0)
@@ -91,6 +99,7 @@ static int BinaryTree_contains(BinaryTree * self, PyObject * value);
 
 /* Protoypes for BinaryTree methods */
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new);
+static PyObject * BinaryTree_remove(BinaryTree * self, PyObject * target);
 static PyObject * BinaryTree_locate(BinaryTree * self, PyObject * target);
 static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func);
 static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func);
@@ -138,6 +147,9 @@ static PyTypeObject BinaryTreeType = {
 static PyMethodDef BinaryTree_methods[] = {
 	{ "insert", (PyCFunction) BinaryTree_insert, METH_O,
 	"Inserts the parameter into the tree, without creating duplicates."
+	},
+	{ "remove", (PyCFunction) BinaryTree_remove, METH_O,
+	"Removes the parameter from the tree."
 	},
 	{"locate", (PyCFunction) BinaryTree_locate, METH_O,
 	"The Node that contains the parameter if it is in the tree, or None."
@@ -335,11 +347,8 @@ static Node * Node_new(void) {
 	if ( newnode == NULL ) return NULL;
 
 	/* Initializing as a leaf */
-	newnode->height = 1;
-	newnode->balance = 0;
+	NODE_SET_LEAF(newnode);
 	
-	newnode->lchild = NULL;
-	newnode->rchild = NULL;
 	newnode->item = NULL;
 
 	PyObject_GC_Track(newnode);
@@ -427,6 +436,137 @@ static Node * Node_insert(Node * root, Node * new) {
 	return NULL; /* Unexpected result in comparison */
 }
 
+/* Removes the node that contains 'target' from tree whose
+ * root is 'root'.
+ * Returns the new root of the tree (which may be NULL).
+ */
+static Node * Node_remove(Node * root, PyObject * target) {
+	int child_height = 0, cmp;
+	Node * rm = NULL;
+	PyObject * tmp;
+
+	if ( root == NULL ) return NULL;
+
+	cmp = PyObject_Compare(root->item, target);
+	if ( cmp == 0 ) {
+		if ( NODE_IS_LEAF(root) ) {
+			/* Simple removal of a leaf */
+			Py_DECREF(root);
+			return NULL;
+		}
+
+		/* Is root a Node with only one child? */
+		if ( root->lchild != NULL ) {
+			if ( root->rchild == NULL )
+				rm = root->lchild;
+		} else {
+			if ( root->rchild != NULL )
+				rm = root->rchild;
+		}
+
+		if ( rm != NULL ) {
+			assert(NODE_IS_LEAF(rm));
+
+			/* Yes, copy the item from the child to
+			 * the root. */
+			Py_INCREF(rm->item);
+			root->item = rm->item;
+
+			/* Deleting the leaf. */
+			if ( rm == root->lchild )
+				Py_CLEAR(root->lchild);
+			else
+				Py_CLEAR(root->rchild);
+
+			/* root becomes a leaf */
+			NODE_SET_LEAF(root);
+
+			return root;
+		}
+
+		/* Root has both lchild and rchild */
+		rm = root->lchild;
+		while ( rm->rchild != NULL ) {
+			rm = rm->rchild;
+		}
+
+		/* rm and root swap references */
+		tmp = rm->item;
+		rm->item = root->item;
+		root->item = tmp;
+
+		/* Fall through to left-descend */
+		cmp = 1;
+
+	} else { /* if ( cmp == 0 ) */
+
+		if ( cmp == -1 ) {
+			/* Descend right */
+			if ( root->rchild )
+				child_height = root->rchild->height;
+
+			root->rchild = Node_remove(root->rchild, target);
+			if ( root->rchild == NULL && PyErr_Occurred() != NULL )
+				return NULL;
+			
+			/* Fixing balance and height of the root */
+			Node_updateHeight(root);
+			NODE_UPDATE_BALANCE(root);
+
+			if ( root->rchild != NULL ) {
+				if ( child_height == root->rchild->height )
+					return root;
+
+				assert(root->rchild->height == child_height - 1);
+			}
+
+			/* Do we need to rebalance? */
+			if ( root->balance > -2 ) return root;
+
+			if ( root->lchild->balance != 1 ) {
+				return rotateRight(root);
+			}
+
+			root->lchild = rotateLeft(root->lchild);
+			return rotateRight(root);
+		}
+	}
+
+	if ( cmp != 1 ) {
+		assert(PyExc_Occurred() != NULL);
+		return NULL; /* Unexpected result in comparison */
+	}
+
+	/* Descend left */
+	if ( root->lchild )
+		child_height = root->lchild->height;
+
+	root->lchild = Node_remove(root->lchild, target);
+	if ( root->lchild == NULL && PyErr_Occurred() != NULL )
+		return NULL;
+	
+	/* Fixing balance and height of the root */
+	Node_updateHeight(root);
+	NODE_UPDATE_BALANCE(root);
+
+	if ( root->lchild != NULL ) {
+		if ( child_height == root->lchild->height )
+			return root;
+
+		assert(root->lchild->height == child_height - 1);
+	}
+
+	/* Do we need to rebalance? */
+	if ( root->balance < 2 ) return root;
+
+	if ( root->rchild->balance != -1 ) {
+		return rotateLeft(root);
+	}
+
+	root->rchild = rotateRight(root->rchild);
+	return rotateLeft(root);
+}
+
 /* Inserts 'new' into a binary tree.
  * Returns 1 on success, 0 on error. */
 static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
@@ -445,6 +585,14 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 		return NULL;
 	}
 		
+	Py_RETURN_NONE;
+}
+
+static PyObject * BinaryTree_remove(BinaryTree * self, PyObject * target) {
+	self->root = Node_remove(self->root, target);
+	if ( self->root == NULL && PyErr_Occurred() != NULL )
+		return NULL;
+	
 	Py_RETURN_NONE;
 }
 
