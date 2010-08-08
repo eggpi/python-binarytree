@@ -533,7 +533,7 @@ static Node * Node_remove(Node * root, PyObject * target) {
 	}
 
 	if ( cmp != 1 ) {
-		assert(PyExc_Occurred() != NULL);
+		assert(PyErr_Occurred() != NULL);
 		return NULL; /* Unexpected result in comparison */
 	}
 
