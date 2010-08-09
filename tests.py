@@ -103,6 +103,45 @@ class BinaryTreeTest(unittest.TestCase):
 
 		self.tree.post_order(lambda x:
 					self.assertEquals(x, res.popleft()))
+	
+	def testRemoval(self):
+		self.tree.remove(60)
+		self.tree.remove(70)
+		
+		self.assertEquals(transversal(self.tree),
+			deque((73, 56, 78, 44, 62, 74, 83, 1, 54,
+				57, 71, 80, 85, 0, 12)),
+			"First set of removals failed.")
+		
+		self.tree.remove(74)
+		self.tree.remove(85)
+
+		self.assertEquals(transversal(self.tree),
+			deque((56, 44, 73, 1, 54, 62, 80, 0, 12,
+				57, 71, 78, 83)),
+			"Second set of removals failed.")
+		
+		self.tree.remove(0)
+		self.tree.remove(54)
+
+		self.assertEquals(transversal(self.tree),
+			deque((56, 12, 73, 1, 44, 62, 80, 57, 71,
+				78, 83)),
+			"Third set of removals failed.")
+
+		self.tree.remove(56)
+		self.tree.remove(12)
+
+		self.assertEquals(transversal(self.tree),
+			deque((73, 44, 80, 1, 62, 78, 83, 57, 71)),
+			"Fourth set of removals failed.")
+		
+		self.tree.remove(63)
+		self.tree.remove(1)
+		
+		self.assertEquals(transversal(self.tree),
+			deque((73, 62, 80, 44, 71, 78, 83, 57)),
+			"Fifth set of removals failed.")
 
 if __name__ == "__main__":
 	unittest.main()
