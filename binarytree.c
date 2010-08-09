@@ -250,7 +250,12 @@ static void Node_clear(Node * self) {
 static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 	PyObject * elements, * iter, * item;
 
-	/* XXX - Should fail if there are any keyword arguments */
+	if ( kwds != NULL ) {
+		PyErr_SetString(PyExc_TypeError,
+		"BinaryTree initializer does not accept keyword arguments");
+		return -1;
+	}
+
 	if (! PyArg_ParseTuple(args, "|O", &elements) ) {
 		return -1;
 	}
@@ -258,7 +263,7 @@ static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 	if ( elements ) {
 		if (! Py_TYPE(elements)->tp_iter ) {
 			PyErr_SetString(PyExc_TypeError,
-			"Initializer for BinaryTree should be iterable.");
+			"Initializer for BinaryTree should be iterable");
 			return -1;	
 		}
 
