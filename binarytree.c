@@ -713,8 +713,8 @@ static int Node_postOrder(Node * root, PyObject * func) {
 
 	if ( root == NULL ) return 1;
 	
-	if ( Node_preOrder(root->lchild, func) == -1 ) return -1;
-	if ( Node_preOrder(root->rchild, func) == -1 ) return -1;
+	if ( Node_postOrder(root->lchild, func) == -1 ) return -1;
+	if ( Node_postOrder(root->rchild, func) == -1 ) return -1;
 	
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
