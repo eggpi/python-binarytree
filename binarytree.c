@@ -92,6 +92,7 @@ static int Node_preOrder(Node * root, PyObject * func);
 static int Node_postOrder(Node * root, PyObject * func);
 
 /* Prototypes for BinaryTreeType methods */
+static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds);
 static void BinaryTree_dealloc(BinaryTree * self);
 static int BinaryTree_traverse(BinaryTree * self, visitproc visit, void * arg);
 static void BinaryTree_clear(BinaryTree * self);
@@ -244,6 +245,37 @@ static void Node_clear(Node * self) {
 	Py_CLEAR(self->rchild);
 
 	return;
+}
+
+static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
+	PyObject * elements, * iter, * item;
+
+	if (! PyArg_ParseTuple(args, "|O", &elements) ) {
+		return -1;
+	}
+
+	if ( elements ) {
+		if (! Py_TYPE(elements)->tp_iter ) {
+			PyErr_SetString(PyExc_TypeError,
+			"Initializer for BinaryTree should be iterable.");
+			return -1;	
+		}
+
+		iter = Py_TYPE(elements)->tp_iter(elements);
+		item = Py_TYPE(iter)->tp_iternext(iter);
+		while ( item != NULL ) {
+			if (! BinaryTree_insert(t, item) ) {
+				Py_DECREF(item);
+				Py_DECREF(iter);
+				return -1;
+			}
+
+			Py_DECREF(item);
+			item = Py_TYPE(iter)->tp_iternext(iter);
+		}
+	}
+
+	return 1;
 }
 
 static void BinaryTree_dealloc(BinaryTree * self) {
@@ -785,6 +817,7 @@ initbinarytree(void) {
 	/* BinaryTreeType setup */
 	BinaryTree_sequence.sq_contains = (objobjproc) BinaryTree_contains;
 
+	BinaryTreeType.tp_init = (initproc) BinaryTree_init;
 	BinaryTreeType.tp_new = (newfunc) PyType_GenericNew;
 	BinaryTreeType.tp_basicsize = sizeof(BinaryTree);
 	BinaryTreeType.tp_name = "binarytree.BinaryTree";
