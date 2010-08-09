@@ -250,6 +250,7 @@ static void Node_clear(Node * self) {
 static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 	PyObject * elements, * iter, * item;
 
+	/* XXX - Should fail if there are any keyword arguments */
 	if (! PyArg_ParseTuple(args, "|O", &elements) ) {
 		return -1;
 	}
@@ -815,13 +816,18 @@ initbinarytree(void) {
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
 	/* BinaryTreeType setup */
+	PyDoc_STRVAR(binary_tree_doc,
+	"The main binary tree class.\n\
+	BinaryTree() -> empty binary tree.\n\
+	BinaryTree(iterable) -> Tree containing iterable's items.");
+
 	BinaryTree_sequence.sq_contains = (objobjproc) BinaryTree_contains;
 
 	BinaryTreeType.tp_init = (initproc) BinaryTree_init;
 	BinaryTreeType.tp_new = (newfunc) PyType_GenericNew;
 	BinaryTreeType.tp_basicsize = sizeof(BinaryTree);
 	BinaryTreeType.tp_name = "binarytree.BinaryTree";
-	BinaryTreeType.tp_doc = "The main binary tree class.";
+	BinaryTreeType.tp_doc = binary_tree_doc;
 	BinaryTreeType.tp_flags = Py_TPFLAGS_DEFAULT |
 				Py_TPFLAGS_BASETYPE |
 				Py_TPFLAGS_HAVE_GC;
