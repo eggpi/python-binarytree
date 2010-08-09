@@ -156,10 +156,13 @@ static PyMethodDef BinaryTree_methods[] = {
 	"The Node that contains the parameter if it is in the tree, or None."
 	},
 	{"in_order", (PyCFunction) BinaryTree_inOrder, METH_O,
-	"in_order(callable) -> apply 'callable' to each node, in-order."
+	"in_order(callable) -> apply 'callable' to each item, in-order."
 	},
 	{"pre_order", (PyCFunction) BinaryTree_preOrder, METH_O,
-	"pre_order(callable) -> apply 'callable' to each node, pre-order."
+	"pre_order(callable) -> apply 'callable' to each item, pre-order."
+	},
+	{"post_order", (PyCFunction) BinaryTree_postOrder, METH_O,
+	"post_order(callable) -> apply 'callable' to each item, post-order."
 	},
 	{NULL}, /* Sentinel */
 };
