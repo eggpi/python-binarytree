@@ -190,6 +190,9 @@ static PyMethodDef Subtree_methods[] = {
 	{"pre_order", (PyCFunction) BinaryTree_preOrder, METH_O,
 	"pre_order(callable) -> apply 'callable' to each node, pre-order."
 	},
+	{"post_order", (PyCFunction) BinaryTree_postOrder, METH_O,
+	"post_order(callable) -> apply 'callable' to each item, post-order."
+	},
 	{"make_tree", (PyCFunction) Subtree_maketree, METH_NOARGS,
 	"Returns a shallow copy of this subtree as a new BinaryTree."
 	},
