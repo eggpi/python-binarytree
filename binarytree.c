@@ -71,7 +71,7 @@ typedef BinaryTree Subtree;
 				
 
 #define NODE_IS_LEAF(node) ((node)->height == 1 ) && \
-			!((node)->rchild || (node)->rchild) && \
+			!((node)->lchild || (node)->rchild) && \
 			((node)->balance == 0)
 
 /* Prototypes for NodeType methods */
