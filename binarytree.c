@@ -561,7 +561,7 @@ static Node * Node_remove(Node * root, PyObject * target) {
 				if ( child_height == root->rchild->height )
 					return root;
 
-				assert(root->rchild->height == child_height - 1);
+				assert(root->rchild->height == child_height -1);
 			}
 
 			/* Do we need to rebalance? */
