@@ -23,7 +23,7 @@
  * node.
  * 'balance' is the height balance of the node. -1 for left-unbalanced, 0 for
  * balanced and +1 for right-unbalanced.
- * 'height' keeps the size maximum number of nodes between a node and a leaf.
+ * 'height' keeps the maximum number of nodes between a node and a leaf.
  * It is initialized as 1 for leaves.
  */ 
 typedef struct _Node {
@@ -75,6 +75,7 @@ typedef BinaryTree Subtree;
 			((node)->balance == 0)
 
 /* Prototypes for NodeType methods */
+static Node * Node_new(void);
 static void Node_dealloc(Node * self);
 static int Node_traverse(Node * self, visitproc visit, void * arg);
 static void Node_clear(Node * self);
@@ -114,7 +115,6 @@ static Node * rotateLeft(Node * root);
 static Node * rotateRight(Node * root);
 
 static void Node_updateHeight(Node * node);
-static Node * Node_new(void);
 
 static PyTypeObject NodeType = {
 	PyObject_HEAD_INIT(NULL)
