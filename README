@@ -1,0 +1,40 @@
+Copyright 2010, Guilherme Gonçalves (guilherme.p.gonc@gmail.com)
+
+This is an implementation of an AVL tree using the Python C API.
+The extension has been tested under Python 2.6.5.
+
+The following basic operations are implemented: insertion, removal, item lookup
+and retrieval.
+The binary tree also supports three types of depth-first traversal: in-order,
+post-order and pre-order. An implementation of a transversal (breadth-first)
+traversal can be found in the tests.py file.
+
+In order to install the extension, use the included setup.py script, as such:
+$ python setup.py install
+The extension will be called 'binarytree'
+
+For licensing information, please see the included COPYING file.
+
+Sample usage:
+
+>>> import binarytree
+>>> tree = binarytree.BinaryTree(range(18)) # (1) 
+>>> tree.root.item # (2)
+7
+>>> left_subtree = tree.root.left_child # (3) 
+>>> left_tree = left_subtree.make_tree() # (4)
+>>> 5 in left_tree 
+True
+>>> items_lower_than_root = []
+>>> left_tree.in_order(items_lower_than_root.append) # (5)
+>>> items_lower_than_root
+[0, 1, 2, 3, 4, 5, 6]
+
+1 - Initialization from iterable
+2 - The root is a Node object with an 'item' attribute
+3 - The left_child and right_child attributes of a Node return a read-only
+reference to a subtree -- a Subtree object.
+4 - Subtrees can be shallow-copied into read-write BinaryTrees
+5 - Traversals receive a callable, which is applied to every Node's item. Here,
+appending the items to a list using in-order traversal yields a sorted list of
+items.
