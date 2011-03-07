@@ -14,7 +14,7 @@ def transversal(tree):
 
 		if tree.root is not None:
 			items.append(tree.root.item)
-			
+
 			sub = tree.root.left_child
 			if sub.root is not None:
 				queue.append(sub)
@@ -32,18 +32,18 @@ class BinaryTreeTest(unittest.TestCase):
 		# A collection of items to add, containing duplicates.
 		self.items = (56, 56, 54, 78, 73, 70, 80, 74, 85, 85,
 				83, 71, 62, 60, 12, 44, 57, 0, 1)
-	
-		
+
+
 		for i in self.items:
 			self.tree.insert(i)
-	
+
 	def testSetUp(self):
 		''' Tests building the tree '''
 
 		self.assertEquals(transversal(self.tree),
 			deque([73, 56, 78, 44, 62, 74, 83, 1, 54, 60, 70,
 				80, 85, 0, 12, 57, 71]))
-	
+
 	def testLocate(self):
 		''' Tests if all inserted items are located, and if locating a
 		nonexisting item fails. '''
@@ -51,9 +51,9 @@ class BinaryTreeTest(unittest.TestCase):
 		for i in self.items:
 			self.assertTrue(i in self.tree)
 
-		self.assertTrue(99 not in self.items)	
+		self.assertTrue(99 not in self.items)
 		self.assertFalse(99 in self.tree)
-	
+
 	def testSubtree(self):
 		''' Tests the subtree implementation. '''
 
@@ -76,7 +76,7 @@ class BinaryTreeTest(unittest.TestCase):
 		self.assertTrue(73 not in right)
 		self.assertTrue(75 not in right)
 		self.assertTrue(75 not in self.tree)
-	
+
 	def testInOrder(self):
 		''' Tests the inorder traversal of self.tree '''
 
@@ -85,16 +85,16 @@ class BinaryTreeTest(unittest.TestCase):
 
 		self.tree.in_order(lambda x:
 					self.assertEquals(x, res.popleft()))
-	
+
 	def testPreOrder(self):
 		''' Tests the pre-order traversal of self.tree '''
-		
+
 		res = deque((73, 56, 44, 1, 0, 12, 54, 62, 60, 57, 70, 71,
 			78, 74, 83, 80, 85))
 
 		self.tree.pre_order(lambda x:
 					self.assertEquals(x, res.popleft()))
-	
+
 	def testPostOrder(self):
 		''' Tests the pos-order traversal of self.tree '''
 
@@ -103,16 +103,16 @@ class BinaryTreeTest(unittest.TestCase):
 
 		self.tree.post_order(lambda x:
 					self.assertEquals(x, res.popleft()))
-	
+
 	def testRemoval(self):
 		self.tree.remove(60)
 		self.tree.remove(70)
-		
+
 		self.assertEquals(transversal(self.tree),
 			deque((73, 56, 78, 44, 62, 74, 83, 1, 54,
 				57, 71, 80, 85, 0, 12)),
 			"First set of removals failed.")
-		
+
 		self.tree.remove(74)
 		self.tree.remove(85)
 
@@ -120,7 +120,7 @@ class BinaryTreeTest(unittest.TestCase):
 			deque((56, 44, 73, 1, 54, 62, 80, 0, 12,
 				57, 71, 78, 83)),
 			"Second set of removals failed.")
-		
+
 		self.tree.remove(0)
 		self.tree.remove(54)
 
@@ -135,10 +135,10 @@ class BinaryTreeTest(unittest.TestCase):
 		self.assertEquals(transversal(self.tree),
 			deque((73, 44, 80, 1, 62, 78, 83, 57, 71)),
 			"Fourth set of removals failed.")
-		
+
 		self.tree.remove(63)
 		self.tree.remove(1)
-		
+
 		self.assertEquals(transversal(self.tree),
 			deque((73, 62, 80, 44, 71, 78, 83, 57)),
 			"Fifth set of removals failed.")
