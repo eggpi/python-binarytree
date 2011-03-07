@@ -28,7 +28,7 @@
  */ 
 typedef struct _Node {
 	PyObject_HEAD
-	
+
 	PyObject * item;
 	struct _Node * lchild, * rchild;
 	int balance;
@@ -68,7 +68,6 @@ typedef BinaryTree Subtree;
 				(node)->lchild = NULL; \
 				(node)->balance = 0; \
 			 } while (0);
-				
 
 #define NODE_IS_LEAF(node) ((node)->height == 1 ) && \
 			!((node)->lchild || (node)->rchild) && \
@@ -270,7 +269,7 @@ static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 		if (! Py_TYPE(elements)->tp_iter ) {
 			PyErr_SetString(PyExc_TypeError,
 			"Initializer for BinaryTree should be iterable");
-			return -1;	
+			return -1;
 		}
 
 		iter = Py_TYPE(elements)->tp_iter(elements);
@@ -312,7 +311,7 @@ static void BinaryTree_clear(BinaryTree * self) {
 
 static int BinaryTree_contains(BinaryTree * self, PyObject * value) {
 	PyObject * res;
-	
+
 	res = BinaryTree_locate(self, value);
 	if ( res == NULL ) return -1;
 
@@ -326,11 +325,11 @@ static Node * rotateLeft(Node * root) {
 
 	if ( root == NULL ) return NULL;
 	newroot = root->rchild;
-	
+
 	if ( newroot ) {
 		root->rchild = newroot->lchild;
 		Node_updateHeight(root);
-		
+
 		newroot->lchild = root;
 		Node_updateHeight(newroot);
 
@@ -355,10 +354,10 @@ static Node * rotateRight(Node * root) {
 	if ( newroot ) {
 		root->lchild = newroot->rchild;
 		Node_updateHeight(root);
-		
+
 		newroot->rchild = root;
 		Node_updateHeight(newroot);
-		
+
 		NODE_UPDATE_BALANCE(root);
 		NODE_UPDATE_BALANCE(newroot);
 
@@ -375,7 +374,7 @@ static void Node_updateHeight(Node * node) {
 
 	lheight = node->lchild ? node->lchild->height : 0;
 	rheight = node->rchild ? node->rchild->height : 0;
-	
+
 	node->height = 1 + ((lheight > rheight) ? lheight : rheight);
 
 	return;
@@ -386,17 +385,17 @@ static void Node_updateHeight(Node * node) {
  */
 static Node * Node_new(void) {
 	Node * newnode;
-	
-	newnode = PyObject_GC_New(Node, &NodeType);	
+
+	newnode = PyObject_GC_New(Node, &NodeType);
 	if ( newnode == NULL ) return NULL;
 
 	/* Initializing as a leaf */
 	NODE_SET_LEAF(newnode);
-	
+
 	newnode->item = NULL;
 
 	PyObject_GC_Track(newnode);
-	
+
 	return newnode;
 }
 
@@ -432,7 +431,7 @@ static Node * Node_insert(Node * root, Node * new) {
 				return root;
 
 			assert(root->lchild->height == 1 + child_height);
-			
+
 			/* Fixing balance and height of the root */
 			Node_updateHeight(root);
 			NODE_UPDATE_BALANCE(root);
@@ -462,7 +461,7 @@ static Node * Node_insert(Node * root, Node * new) {
 				return root;
 
 			assert(root->rchild->height == 1 + child_height);
-			
+
 			Node_updateHeight(root);
 			NODE_UPDATE_BALANCE(root);
 
@@ -552,7 +551,7 @@ static Node * Node_remove(Node * root, PyObject * target) {
 			root->rchild = Node_remove(root->rchild, target);
 			if ( root->rchild == NULL && PyErr_Occurred() != NULL )
 				return NULL;
-			
+
 			/* Fixing balance and height of the root */
 			Node_updateHeight(root);
 			NODE_UPDATE_BALANCE(root);
@@ -588,7 +587,7 @@ static Node * Node_remove(Node * root, PyObject * target) {
 	root->lchild = Node_remove(root->lchild, target);
 	if ( root->lchild == NULL && PyErr_Occurred() != NULL )
 		return NULL;
-	
+
 	/* Fixing balance and height of the root */
 	Node_updateHeight(root);
 	NODE_UPDATE_BALANCE(root);
@@ -628,7 +627,7 @@ static PyObject * BinaryTree_insert(BinaryTree * self, PyObject * new) {
 		Py_DECREF(newnode);
 		return NULL;
 	}
-		
+
 	Py_RETURN_NONE;
 }
 
@@ -636,7 +635,7 @@ static PyObject * BinaryTree_remove(BinaryTree * self, PyObject * target) {
 	self->root = Node_remove(self->root, target);
 	if ( self->root == NULL && PyErr_Occurred() != NULL )
 		return NULL;
-	
+
 	Py_RETURN_NONE;
 }
 
@@ -681,7 +680,7 @@ static int Node_inOrder(Node * root, PyObject * func) {
 
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
-	
+
 	/* The new reference returned by the call won't be used. */
 	Py_DECREF(res);
 
@@ -715,10 +714,10 @@ static int Node_postOrder(Node * root, PyObject * func) {
 	PyObject * res;
 
 	if ( root == NULL ) return 1;
-	
+
 	if ( Node_postOrder(root->lchild, func) == -1 ) return -1;
 	if ( Node_postOrder(root->rchild, func) == -1 ) return -1;
-	
+
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
 
@@ -737,7 +736,7 @@ static Node * Node_copytree(Node * root) {
 
 	memcpy((void *) newroot, (void *) root, sizeof(Node));
 	Py_INCREF(newroot->item);
-	
+
 	if ( newroot->lchild != NULL ) {
 		newroot->lchild = Node_copytree(newroot->lchild);
 		if ( newroot->lchild == NULL ) {
@@ -753,7 +752,7 @@ static Node * Node_copytree(Node * root) {
 			return NULL;
 		}
 	}
-	
+
 	return newroot;
 }
 
@@ -764,7 +763,7 @@ static PyObject * BinaryTree_inOrder(BinaryTree * self, PyObject * func) {
 	if ( Node_inOrder(self->root, func) == 1 ) {
 		Py_RETURN_NONE;
 	}
-	
+
 	return NULL;
 }
 
@@ -775,7 +774,7 @@ static PyObject * BinaryTree_preOrder(BinaryTree * self, PyObject * func) {
 	if ( Node_preOrder(self->root, func) == 1 ) {
 		Py_RETURN_NONE;
 	}
-	
+
 	return NULL;
 }
 
@@ -823,7 +822,7 @@ initbinarytree(void) {
 	NodeType.tp_free = PyObject_GC_Del;
 	NodeType.tp_getset = Node_getsetters;
 	NodeType.tp_members = Node_members;
-	
+
 	if ( PyType_Ready(&NodeType) < 0 ) return;
 
 	/* BinaryTreeType setup */
@@ -868,18 +867,18 @@ initbinarytree(void) {
 	SubtreeType.tp_traverse = (traverseproc) BinaryTree_traverse;
 	SubtreeType.tp_clear = (inquiry) BinaryTree_clear;
 	SubtreeType.tp_free = PyObject_GC_Del;
-	
+
 	if ( PyType_Ready(&SubtreeType) < 0 ) return;
 
 	module = Py_InitModule3("binarytree", NULL,
 				"A self-balancing binary search tree.");
-	
+
 	Py_INCREF(&BinaryTreeType);
 	PyModule_AddObject(module, "BinaryTree", (PyObject *) &BinaryTreeType);
-	
+
 	Py_INCREF(&NodeType);
 	PyModule_AddObject(module, "Node", (PyObject *) &NodeType);
-	
+
 	Py_INCREF(&SubtreeType);
 	PyModule_AddObject(module, "Subtree", (PyObject *) &SubtreeType);
 
