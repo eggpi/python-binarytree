@@ -105,6 +105,8 @@ class BinaryTreeTest(unittest.TestCase):
 					self.assertEquals(x, res.popleft()))
 
 	def testRemoval(self):
+		''' Tests the removal of items from self.tree '''
+
 		self.tree.remove(60)
 		self.tree.remove(70)
 
