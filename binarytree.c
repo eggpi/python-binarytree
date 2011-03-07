@@ -253,7 +253,7 @@ static void Node_clear(Node * self) {
 }
 
 static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
-	PyObject * elements, * iter, * item;
+	PyObject * elements = NULL, * iter, * item;
 
 	if ( kwds != NULL ) {
 		PyErr_SetString(PyExc_TypeError,
