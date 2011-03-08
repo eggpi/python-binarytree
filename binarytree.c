@@ -266,15 +266,14 @@ static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 	}
 
 	if ( elements ) {
-		if (! Py_TYPE(elements)->tp_iter ) {
+		if (! PyIter_Check(elements) ) {
 			PyErr_SetString(PyExc_TypeError,
 			"Initializer for BinaryTree should be iterable");
 			return -1;
 		}
 
-		iter = Py_TYPE(elements)->tp_iter(elements);
-		item = Py_TYPE(iter)->tp_iternext(iter);
-		while ( item != NULL ) {
+		iter = PyObject_GetIter(elements);
+		while ( (item = PyIter_Next(iter)) != NULL ) {
 			if (! BinaryTree_insert(t, item) ) {
 				Py_DECREF(item);
 				Py_DECREF(iter);
@@ -282,7 +281,6 @@ static int BinaryTree_init(BinaryTree * t, PyObject * args, PyObject * kwds) {
 			}
 
 			Py_DECREF(item);
-			item = Py_TYPE(iter)->tp_iternext(iter);
 		}
 	}
 
