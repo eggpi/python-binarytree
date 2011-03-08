@@ -417,8 +417,12 @@ static Node * Node_insert(Node * root, Node * new) {
 			if ( root->lchild )
 				child_height = root->lchild->height;
 
+			if ( Py_EnterRecursiveCall(" in insertion") != 0 )
+				return NULL;
+
 			root->lchild = Node_insert(root->lchild, new);
 			if ( root->lchild == NULL ) return NULL;
+			Py_LeaveRecursiveCall();
 
 			/* No change in height.
 			 * Either the insertion balanced the left subtree,
@@ -452,8 +456,12 @@ static Node * Node_insert(Node * root, Node * new) {
 			if ( root->rchild )
 				child_height = root->rchild->height;
 
+			if ( Py_EnterRecursiveCall(" in insertion") != 0 )
+				return NULL;
+
 			root->rchild = Node_insert(root->rchild, new);
 			if ( root->rchild == NULL ) return NULL;
+			Py_LeaveRecursiveCall();
 
 			if ( child_height == root->rchild->height )
 				return root;
@@ -546,9 +554,13 @@ static Node * Node_remove(Node * root, PyObject * target) {
 			if ( root->rchild )
 				child_height = root->rchild->height;
 
+			if ( Py_EnterRecursiveCall(" in removal") != 0 )
+				return NULL;
+
 			root->rchild = Node_remove(root->rchild, target);
 			if ( root->rchild == NULL && PyErr_Occurred() != NULL )
 				return NULL;
+			Py_LeaveRecursiveCall();
 
 			/* Fixing balance and height of the root */
 			Node_updateHeight(root);
@@ -582,9 +594,13 @@ static Node * Node_remove(Node * root, PyObject * target) {
 	if ( root->lchild )
 		child_height = root->lchild->height;
 
+	if ( Py_EnterRecursiveCall(" in removal") != 0 )
+		return NULL;
+
 	root->lchild = Node_remove(root->lchild, target);
 	if ( root->lchild == NULL && PyErr_Occurred() != NULL )
 		return NULL;
+	Py_LeaveRecursiveCall();
 
 	/* Fixing balance and height of the root */
 	Node_updateHeight(root);
@@ -674,15 +690,28 @@ static int Node_inOrder(Node * root, PyObject * func) {
 
 	if ( root == NULL ) return 1;
 
-	if ( Node_inOrder(root->lchild, func) == -1 ) return -1;
+	/* Traverse left subtree */
+	if ( Py_EnterRecursiveCall(" in in-order traversal") != 0 )
+		return -1;
 
+	if ( Node_inOrder(root->lchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	/* Process this node */
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
 
 	/* The new reference returned by the call won't be used. */
 	Py_DECREF(res);
 
-	return Node_inOrder(root->rchild, func);
+	/* Traverse right subtree */
+	if ( Py_EnterRecursiveCall(" in in-order traversal") != 0 )
+		return -1;
+
+	if ( Node_inOrder(root->rchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	return 1;
 }
 
 /* Traverses the subtree with root at 'root' in pre-order applying
@@ -694,14 +723,27 @@ static int Node_preOrder(Node * root, PyObject * func) {
 
 	if ( root == NULL ) return 1;
 
+	/* Process this node */
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
 
 	Py_DECREF(res);
 
-	if ( Node_preOrder(root->lchild, func) == -1 ) return -1;
+	/* Traverse left subtree */
+	if ( Py_EnterRecursiveCall(" in pre-order traversal") != 0 )
+		return -1;
 
-	return Node_preOrder(root->rchild, func);
+	if ( Node_preOrder(root->lchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	/* Traverse right subtree */
+	if ( Py_EnterRecursiveCall(" in pre-order traversal") != 0 )
+		return -1;
+
+	if ( Node_preOrder(root->rchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	return 1;
 }
 
 /* Traverses the subtree with root at 'root' in post-order
@@ -713,9 +755,21 @@ static int Node_postOrder(Node * root, PyObject * func) {
 
 	if ( root == NULL ) return 1;
 
-	if ( Node_postOrder(root->lchild, func) == -1 ) return -1;
-	if ( Node_postOrder(root->rchild, func) == -1 ) return -1;
+	/* Traverse left subtree */
+	if ( Py_EnterRecursiveCall(" in post-order traversal") != 0 )
+		return -1;
 
+	if ( Node_postOrder(root->lchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	/* Traverse right subtree */
+	if ( Py_EnterRecursiveCall(" in post-order traversal") != 0 )
+		return -1;
+
+	if ( Node_postOrder(root->rchild, func) == -1 ) return -1;
+	Py_LeaveRecursiveCall();
+
+	/* Process this node */
 	res = PyObject_CallFunctionObjArgs(func, root->item, NULL);
 	if ( res == NULL ) return -1;
 
@@ -736,19 +790,27 @@ static Node * Node_copytree(Node * root) {
 	Py_INCREF(newroot->item);
 
 	if ( newroot->lchild != NULL ) {
+		if ( Py_EnterRecursiveCall(" in copytree") != 0 )
+			return NULL;
+
 		newroot->lchild = Node_copytree(newroot->lchild);
 		if ( newroot->lchild == NULL ) {
 			Node_dealloc(newroot);
 			return NULL;
 		}
+		Py_LeaveRecursiveCall();
 	}
 
 	if ( newroot->rchild != NULL ) {
+		if ( Py_EnterRecursiveCall(" in copytree") != 0 )
+			return NULL;
+
 		newroot->rchild = Node_copytree(newroot->rchild);
 		if ( newroot->rchild == NULL ) {
 			Node_dealloc(newroot);
 			return NULL;
 		}
+		Py_LeaveRecursiveCall();
 	}
 
 	return newroot;
