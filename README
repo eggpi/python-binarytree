@@ -1,7 +1,7 @@
-Copyright 2010, Guilherme Gonçalves (guilherme.p.gonc@gmail.com)
+Copyright 2010, 2011 Guilherme Gonçalves (guilherme.p.gonc@gmail.com)
 
 This is an implementation of an AVL tree using the Python C API.
-The extension has been tested under Python 2.6.5.
+The extension has been tested under Python 2.6.5/2.6.6.
 
 The following basic operations are implemented: insertion, removal, item lookup
 and retrieval.
