@@ -855,7 +855,8 @@ static PyObject * Subtree_maketree(Subtree * self) {
 	new = PyObject_GC_New(BinaryTree, &BinaryTreeType);
 	if ( new == NULL ) return NULL;
 
-	new->root = Node_copytree(self->root);
+	if ( self->root )
+		new->root = Node_copytree(self->root);
 
 	return (PyObject *) new;
 }

@@ -77,6 +77,11 @@ class BinaryTreeTest(unittest.TestCase):
 		self.assertTrue(75 not in right)
 		self.assertTrue(75 not in self.tree)
 
+		empty_subtree = self.tree.locate(min(self.items)).left_child
+		empty_tree = empty_subtree.make_tree()
+
+		self.assertTrue('''empty_tree.root is None''')
+
 	def testInOrder(self):
 		''' Tests the inorder traversal of self.tree '''
 
