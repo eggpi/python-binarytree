@@ -27,14 +27,14 @@ class BinaryTreeTest(unittest.TestCase):
 	def setUp(self):
 		''' Build the test tree. '''
 
-		self.tree = binarytree.BinaryTree()
-
 		# A collection of items to add, containing duplicates.
 		self.items = (56, 56, 54, 78, 73, 70, 80, 74, 85, 85,
 				83, 71, 62, 60, 12, 44, 57, 0, 1)
 
+		# Insert some of the items during initialization
+		self.tree = binarytree.BinaryTree(self.items[:8])
 
-		for i in self.items:
+		for i in self.items[8:]:
 			self.tree.insert(i)
 
 	def testSetUp(self):
